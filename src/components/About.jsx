@@ -5,96 +5,97 @@ import './About.css';
 const cvUrl = 'https://portfolio2-sigma-pink.vercel.app/cv.pdf';
 const googleViewUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(cvUrl)}`;
 
+const inView = (delay = 0) => ({
+  initial: { opacity: 0, y: 30 },
+  whileInView: { opacity: 1, y: 0 },
+  transition: { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] },
+  viewport: { once: true },
+});
+
 const About = () => {
-  const highlights = [
-    { icon: '🎓', label: 'Education', value: 'Bahir Dar University — Computer Science' },
+  const facts = [
+    { icon: '🎓', label: 'Degree', value: 'B.Sc. Computer Science' },
+    { icon: '🏫', label: 'University', value: 'Bahir Dar University' },
     { icon: '📍', label: 'Location', value: 'Bahir Dar, Ethiopia' },
-    { icon: '💼', label: 'Focus', value: 'Full Stack Web Development' },
+    { icon: '💼', label: 'Focus', value: 'Full Stack Development' },
     { icon: '🤖', label: 'Interest', value: 'AI & Machine Learning' },
+    { icon: '🌐', label: 'Languages', value: 'Amharic · English' },
   ];
 
   return (
-    <motion.section
-      className="about"
-      id="about"
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7 }}
-      viewport={{ once: true }}
-    >
+    <section className="about" id="about">
       <div className="container">
-        <h2 className="section-heading">About Me</h2>
-        <div className="section-divider"></div>
-        <p className="section-subheading">
-          A brief introduction to who I am and what drives me.
-        </p>
-
-        <div className="about-grid">
-          {/* Photo */}
-          <motion.div
-            className="about-photo-wrap"
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            viewport={{ once: true }}
-          >
-            <div className="photo-frame">
-              <img src={profilePhoto} alt="Sisay Temesgen" className="profile-photo" />
+        <div className="about-layout">
+          {/* Photo column */}
+          <motion.div className="about-photo-col" {...inView(0)}>
+            <div className="about-photo-frame">
+              <img src={profilePhoto} alt="Sisay Temesgen" />
+              <div className="about-photo-overlay" />
             </div>
-            <div className="photo-badge">
-              <span>👋</span> Open to work
-            </div>
-          </motion.div>
-
-          {/* Text */}
-          <motion.div
-            className="about-body"
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, delay: 0.2 }}
-            viewport={{ once: true }}
-          >
-            <p>
-              I'm a passionate software developer and Computer Science student at Bahir Dar University,
-              Ethiopia. My journey in tech started with curiosity about how websites work, and it has
-              grown into a deep commitment to building meaningful digital products.
-            </p>
-            <p>
-              I specialize in the MERN stack — MongoDB, Express.js, React, and Node.js — and I'm
-              continuously expanding my knowledge into AI and machine learning. I believe great software
-              is not just functional, but also intuitive and accessible to everyone.
-            </p>
-            <p>
-              Outside of coding, I enjoy exploring open-source projects, contributing to the developer
-              community, and learning about the latest advancements in technology.
-            </p>
-
-            <div className="highlights-grid">
-              {highlights.map((item, i) => (
-                <div className="highlight-card" key={i}>
-                  <span className="highlight-icon">{item.icon}</span>
-                  <div>
-                    <p className="highlight-label">{item.label}</p>
-                    <p className="highlight-value">{item.value}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="about-actions">
-              <a href="mailto:sisay3575@gmail.com" className="btn-primary">Hire Me</a>
-              <a href="https://github.com/Sis3575-T" target="_blank" rel="noopener noreferrer" className="btn-outline">GitHub Profile</a>
-              <div className="btn-cv-group">
-                <span>📄 CV —</span>
-                <a href={googleViewUrl} target="_blank" rel="noopener noreferrer">View</a>
-                <span>|</span>
-                <a href={cvUrl} download="Sisay_Temesgen_CV.pdf">Download</a>
+            <div className="about-photo-card">
+              <span className="about-photo-card-icon">👋</span>
+              <div>
+                <p className="about-photo-card-title">Open to Work</p>
+                <p className="about-photo-card-sub">Internships & Full-time</p>
               </div>
             </div>
           </motion.div>
+
+          {/* Content column */}
+          <div className="about-content-col">
+            <motion.div {...inView(0.05)}>
+              <p className="section-tag">Who I Am</p>
+              <h2 className="section-title">Passionate developer,<br />lifelong learner.</h2>
+            </motion.div>
+
+            <motion.p className="about-bio" {...inView(0.1)}>
+              I'm a Computer Science student at Bahir Dar University with a deep passion for
+              building modern, accessible web applications. My journey started with curiosity
+              about how the web works — and has grown into a commitment to crafting software
+              that makes a real difference.
+            </motion.p>
+
+            <motion.p className="about-bio" {...inView(0.15)}>
+              I'm actively exploring AI and machine learning to expand my technical expertise.
+              I believe great software is not just functional — it's intuitive, fast, and
+              accessible to everyone, everywhere.
+            </motion.p>
+
+            {/* Facts grid */}
+            <motion.div className="about-facts" {...inView(0.2)}>
+              {facts.map((f, i) => (
+                <div className="about-fact" key={i}>
+                  <span className="fact-icon">{f.icon}</span>
+                  <div>
+                    <p className="fact-label">{f.label}</p>
+                    <p className="fact-value">{f.value}</p>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+
+            {/* Actions */}
+            <motion.div className="about-actions" {...inView(0.25)}>
+              <a href="mailto:sisay3575@gmail.com" className="btn btn-primary">Hire Me</a>
+              <a
+                href="https://github.com/Sis3575-T"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-outline"
+              >
+                GitHub Profile
+              </a>
+              <div className="cv-inline">
+                <span>📄</span>
+                <a href={googleViewUrl} target="_blank" rel="noopener noreferrer">View CV</a>
+                <span className="cv-sep">·</span>
+                <a href={cvUrl} download="Sisay_Temesgen_CV.pdf">Download</a>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 };
 

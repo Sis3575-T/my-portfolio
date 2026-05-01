@@ -1,75 +1,88 @@
 import { motion } from 'framer-motion';
 import './Skills.css';
 
-const Skills = () => {
-  const categories = [
-    {
-      title: 'Frontend',
-      icon: '🎨',
-      skills: ['HTML5', 'CSS3', 'JavaScript (ES6+)', 'React'],
-    },
-    {
-      title: 'Backend',
-      icon: '⚙️',
-      skills: ['Node.js', 'Express.js', 'MongoDB', 'REST APIs'],
-    },
-    {
-      title: 'Tools & Others',
-      icon: '🛠️',
-      skills: ['Git & GitHub', 'VS Code', 'Vite', 'Responsive Design'],
-    },
-  ];
+const categories = [
+  {
+    icon: '🎨',
+    title: 'Frontend',
+    color: '#6366f1',
+    bg: '#eef2ff',
+    skills: ['HTML5', 'CSS3', 'JavaScript (ES6+)', 'React', 'Responsive Design', 'Framer Motion'],
+  },
+  {
+    icon: '⚙️',
+    title: 'Backend',
+    color: '#0891b2',
+    bg: '#ecfeff',
+    skills: ['Node.js', 'Express.js', 'MongoDB', 'REST APIs'],
+  },
+  {
+    icon: '🛠️',
+    title: 'Tools & DevOps',
+    color: '#7c3aed',
+    bg: '#f5f3ff',
+    skills: ['Git & GitHub', 'VS Code', 'Vite', 'Vercel', 'Render'],
+  },
+  {
+    icon: '🤖',
+    title: 'Learning',
+    color: '#059669',
+    bg: '#ecfdf5',
+    skills: ['Machine Learning', 'Python Basics', 'Data Structures', 'Algorithms'],
+  },
+];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.15 } },
-  };
-
-  const cardVariants = {
-    hidden: { y: 30, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.5 } },
-  };
-
-  return (
-    <motion.section
-      className="skills"
-      id="skills"
-      initial={{ opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.7 }}
-      viewport={{ once: true }}
-    >
-      <div className="container">
-        <h2 className="section-heading">Technical Skills</h2>
-        <div className="section-divider"></div>
-        <p className="section-subheading">
-          Technologies and tools I work with to build modern web applications.
-        </p>
-
-        <motion.div
-          className="skills-grid"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          {categories.map((cat, i) => (
-            <motion.div className="skill-category" key={i} variants={cardVariants}>
-              <div className="category-header">
-                <span className="category-icon">{cat.icon}</span>
-                <h3>{cat.title}</h3>
-              </div>
-              <div className="skill-tags">
-                {cat.skills.map((skill, j) => (
-                  <span key={j} className="skill-tag">{skill}</span>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
-    </motion.section>
-  );
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } },
 };
+
+const card = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
+};
+
+const Skills = () => (
+  <section className="skills" id="skills">
+    <div className="container">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        viewport={{ once: true }}
+      >
+        <p className="section-tag">What I Know</p>
+        <h2 className="section-title">Technical Skills</h2>
+        <p className="section-subtitle">
+          Technologies and tools I use to build modern, scalable web applications.
+        </p>
+      </motion.div>
+
+      <motion.div
+        className="skills-grid"
+        variants={container}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true }}
+      >
+        {categories.map((cat, i) => (
+          <motion.div className="skill-card" key={i} variants={card}>
+            <div className="skill-card-header" style={{ '--cat-color': cat.color, '--cat-bg': cat.bg }}>
+              <span className="skill-card-icon">{cat.icon}</span>
+              <h3 className="skill-card-title">{cat.title}</h3>
+            </div>
+            <div className="skill-tags">
+              {cat.skills.map((s, j) => (
+                <span key={j} className="skill-tag" style={{ '--cat-color': cat.color, '--cat-bg': cat.bg }}>
+                  {s}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
+  </section>
+);
 
 export default Skills;
