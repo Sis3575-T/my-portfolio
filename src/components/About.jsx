@@ -83,9 +83,9 @@ const About = () => {
               <a href="https://github.com/Sis3575-T" target="_blank" rel="noopener noreferrer" className="btn-outline">GitHub Profile</a>
               <div className="btn-cv-group">
                 <span>📄 CV —</span>
-                <a href="/Sisay_Temesgen_CV.html" target="_blank" rel="noopener noreferrer">View</a>
+                <a href="/Sisay_Temesgen_CV.pdf" target="_blank" rel="noopener noreferrer">View</a>
                 <span>|</span>
-                <a href="/Sisay_Temesgen_CV.html" download="Sisay_Temesgen_CV.html">Download</a>
+                <a href="/Sisay_Temesgen_CV.pdf" download="Sisay_Temesgen_CV.pdf">Download</a>
               </div>
             </div>
           </motion.div>
