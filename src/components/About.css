@@ -16,10 +16,9 @@
 }
 
 .about-layout {
-  display: grid;
-  grid-template-columns: 420px 1fr;
-  gap: 6rem;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  max-width: 780px;
 }
 
 /* ── Photo column ── */
