@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const blogSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
-  slug: { type: String, required: true, unique: true },
+  slug: { type: String, required: true, unique: true, index: true },
   excerpt: { type: String, required: true },
   content: { type: String, required: true },
   coverImage: { type: String, default: '' },
@@ -14,7 +14,6 @@ const blogSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
 
-blogSchema.index({ slug: 1 });
 blogSchema.index({ featured: -1, publishedAt: -1 });
 blogSchema.index({ title: 'text', excerpt: 'text', content: 'text', tags: 'text' });
 
