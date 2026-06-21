@@ -182,29 +182,6 @@ function Header({ onToggleTerminal }) {
             </a>
 
             <button
-              onClick={onToggleTerminal}
-              className="hidden md:flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300"
-              style={{
-                color: 'var(--text-light)',
-                background: 'var(--glass-bg)',
-                border: '1px solid var(--glass-border)',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = 'var(--primary-color)';
-                e.target.style.borderColor = 'var(--primary-color)';
-                e.target.style.transform = 'translateY(-3px)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = 'var(--text-light)';
-                e.target.style.borderColor = 'var(--glass-border)';
-                e.target.style.transform = 'translateY(0)';
-              }}
-              aria-label="Open terminal"
-            >
-              <FaTerminal size={14} />
-            </button>
-
-            <button
               onClick={toggleTheme}
               className="theme-toggle"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}

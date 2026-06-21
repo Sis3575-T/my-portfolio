@@ -3,18 +3,46 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaExternalLinkAlt, FaGithub, FaFolder, FaArrowRight } from 'react-icons/fa';
 import { publicApi, imageUrl } from '../../utils/api';
+import touristImg from '../../assets/tourist.png';
+import abayHotelImg from '../../assets/hero2.jpg';
+
+// Hardcoded projects (fallback when API is not available)
+const hardcodedProjects = [
+  {
+    _id: '1',
+    title: 'Ethiopian Tourist Destination',
+    description: 'Full-stack web application built with React frontend and Node.js backend. Features real-time data management with MongoDB, RESTful API architecture, responsive design with CSS3, and interactive user interface. Implements destination search functionality, dynamic content rendering, user authentication, and booking system integration. Deployed with modern DevOps practices.',
+    thumbnail: touristImg,
+    liveUrl: 'https://tourist-destination-2.onrender.com/',
+    githubUrl: '',
+    technologies: ['React', 'Node.js', 'MongoDB', 'Express', 'CSS3'],
+  },
+  {
+    _id: '2',
+    title: 'Abay Grand Hotel',
+    description: 'Elegant hotel booking and management system with stunning design and seamless user experience. Features include room reservations, availability calendar, guest management, and online booking with real-time updates. A modern hospitality solution built for luxury accommodations.',
+    thumbnail: abayHotelImg,
+    liveUrl: 'https://abay-grand-hotel-1.vercel.app/',
+    githubUrl: '',
+    technologies: ['React', 'Next.js', 'Tailwind CSS', 'Vercel'],
+  },
+];
 
 function ProjectsSection() {
-  const [projects, setProjects] = useState([]);
+  const [projects, setProjects] = useState(hardcodedProjects);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
         const res = await publicApi.getProjects({ limit: 6 });
         console.log('Projects data:', JSON.stringify(res.data?.data?.map(p => ({ id: p._id, title: p.title, thumb: p.thumbnail, images: p.images }))));
-        setProjects(res.data?.data || []);
+        if (res.data?.data && res.data.data.length > 0) {
+          setProjects(res.data.data);
+        }
+        // If API fails or returns no data, keep hardcoded projects
       } catch (err) {
-        console.error('Failed to load projects:', err?.response?.status, err?.message);
+        console.error('Failed to load projects, using hardcoded data:', err?.response?.status, err?.message);
+        // Keep hardcoded projects on error
       }
     };
     fetchProjects();
@@ -50,7 +78,11 @@ function ProjectsSection() {
             >
               <div className="project-image">
                 {project.thumbnail ? (
-                  <img src={imageUrl(project.thumbnail)} alt={project.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  typeof project.thumbnail === 'string' && project.thumbnail.startsWith('http') ? (
+                    <img src={imageUrl(project.thumbnail)} alt={project.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <img src={project.thumbnail} alt={project.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  )
                 ) : project.images && project.images.length > 0 ? (
                   <img src={imageUrl(project.images[0])} alt={project.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
@@ -68,17 +100,14 @@ function ProjectsSection() {
                   ))}
                 </div>
                 <div className="project-links">
-                  <Link to={`/project/${project._id}`} className="project-link project-link-primary">
-                    <FaArrowRight size={13} /> View Details
-                  </Link>
+                  {project.liveUrl && project.liveUrl !== '#' && (
+                    <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-link project-link-primary">
+                      <FaExternalLinkAlt size={13} /> Visit Site
+                    </a>
+                  )}
                   {project.githubUrl && (
                     <a href={project.githubUrl} target="_blank" rel="noreferrer" className="project-link">
                       <FaGithub size={14} /> GitHub
-                    </a>
-                  )}
-                  {project.liveUrl && (
-                    <a href={project.liveUrl} target="_blank" rel="noreferrer" className="project-link">
-                      <FaExternalLinkAlt size={13} /> Live Demo
                     </a>
                   )}
                 </div>
