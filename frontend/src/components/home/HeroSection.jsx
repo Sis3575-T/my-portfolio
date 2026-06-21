@@ -5,31 +5,63 @@ import { FaGithub, FaLinkedin, FaTwitter } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import profilePhoto from '../../assets/profile-photo.jpg';
 import CommandBar from '../CommandBar';
+import HeroTerminal from './HeroTerminal';
+import { publicApi, imageUrl } from '../../utils/api';
 
-const roles = ['Full Stack Developer', 'Computer Science Student', 'AI Enthusiast', 'Problem Solver'];
+const roles = [
+  'Full Stack Developer',
+  'AI Enthusiast',
+  'Computer Science Student',
+  'Problem Solver',
+];
 
-function HeroSection() {
-  const [roleIndex, setRoleIndex] = useState(0);
-  const [charIndex, setCharIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
+function TypeWriter({ phrases }) {
+  const [text, setText] = useState('');
+  const [idx, setIdx] = useState(0);
+  const [charIdx, setCharIdx] = useState(0);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const currentRole = roles[roleIndex];
+    const current = phrases[idx];
     let timeout;
 
-    if (!isDeleting && charIndex < currentRole.length) {
-      timeout = setTimeout(() => setCharIndex(prev => prev + 1), 100);
-    } else if (!isDeleting && charIndex === currentRole.length) {
-      timeout = setTimeout(() => setIsDeleting(true), 2000);
-    } else if (isDeleting && charIndex > 0) {
-      timeout = setTimeout(() => setCharIndex(prev => prev - 1), 50);
-    } else if (isDeleting && charIndex === 0) {
-      setIsDeleting(false);
-      setRoleIndex((prev) => (prev + 1) % roles.length);
+    if (!deleting && charIdx < current.length) {
+      timeout = setTimeout(() => {
+        setText(current.slice(0, charIdx + 1));
+        setCharIdx(c => c + 1);
+      }, 80);
+    } else if (!deleting && charIdx === current.length) {
+      timeout = setTimeout(() => setDeleting(true), 2500);
+    } else if (deleting && charIdx > 0) {
+      timeout = setTimeout(() => {
+        setText(current.slice(0, charIdx - 1));
+        setCharIdx(c => c - 1);
+      }, 40);
+    } else if (deleting && charIdx === 0) {
+      setDeleting(false);
+      setIdx((i) => (i + 1) % phrases.length);
     }
 
     return () => clearTimeout(timeout);
-  }, [charIndex, isDeleting, roleIndex]);
+  }, [charIdx, deleting, idx, phrases]);
+
+  return (
+    <span>
+      {text}<span className="typing-cursor">|</span>
+    </span>
+  );
+}
+
+function HeroSection() {
+  const [avatarUrl, setAvatarUrl] = useState('');
+
+  useEffect(() => {
+    publicApi.getHero().then(({ data }) => {
+      if (data?.data?.avatar) {
+        setAvatarUrl(imageUrl(data.data.avatar));
+      }
+    }).catch(() => {});
+  }, []);
 
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
@@ -56,54 +88,41 @@ function HeroSection() {
           <div className="photo-ring-outer" />
           <div className="photo-ring-inner" />
           <div className="hero-photo-frame">
-            <img src={profilePhoto} alt="Sisay Temesgen" className="hero-photo-img" />
+            <img src={avatarUrl || profilePhoto} alt="Sisay Temesgen" className="hero-photo-img" />
           </div>
         </motion.div>
 
-        <div className="hero-content">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="hero-greeting"
-          >
-            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-color)' }} />
-            Welcome to my portfolio
-          </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="hero-intro"
+        >
+          <span className="hero-greeting">Hi, I'm</span>
+          <h1 className="hero-name">Sisay Temesgen</h1>
+          <p className="hero-role"><TypeWriter phrases={roles} /></p>
+          <p className="hero-desc">
+            Computer Science student at Bahir Dar University — building modern,
+            accessible web applications with React, Node.js &amp; MongoDB.
+          </p>
+        </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="hero-text"
-          >
-            <h1 className="hero-name">
-              Hi, I'm{' '}
-              <span className="hero-name-accent">Sisay Temesgen</span>
-            </h1>
-            <p className="hero-subtitle">
-              <span className="typing-text">{roles[roleIndex].substring(0, charIndex)}</span>
-              <span className="typing-cursor">|</span>
-            </p>
-          </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="hero-terminal-col"
+        >
+          <HeroTerminal />
+        </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="hero-intro"
-          >
-            I build modern, responsive, and performant web applications using cutting-edge technologies.
-            Currently pursuing a B.Sc. in Computer Science at Bahir Dar University while crafting
-            full-stack solutions and exploring software engineering best practices.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="hero-buttons"
-          >
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="hero-bottom"
+        >
+          <div className="hero-buttons">
             <button onClick={() => scrollToSection('projects')} className="btn btn-secondary">
               View Projects <FiArrowRight />
             </button>
@@ -128,14 +147,9 @@ function HeroSection() {
             >
               Download CV <FiDownload />
             </a>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-            className="hero-social"
-          >
+          <div className="hero-social">
             <a href="https://github.com/Sis3575-T" target="_blank" rel="noreferrer" className="hero-social-link" aria-label="GitHub">
               <FaGithub size={18} />
             </a>
@@ -148,17 +162,12 @@ function HeroSection() {
             <a href="mailto:sisay3575@gmail.com" className="hero-social-link" aria-label="Email">
               <FiMail size={18} />
             </a>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.55 }}
-            className="hero-command-area"
-          >
+          <div className="hero-command-area">
             <CommandBar />
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
 
       <motion.div

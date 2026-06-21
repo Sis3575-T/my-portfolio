@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { publicApi } from '../utils/api';
-import { FiTerminal, FiSearch } from 'react-icons/fi';
+import { FiTerminal, FiSearch, FiExternalLink } from 'react-icons/fi';
 
 const NAV_COMMANDS = [
   { cmd: 'about', desc: 'Scroll to About section', action: 'scroll', target: 'about' },
@@ -11,6 +11,7 @@ const NAV_COMMANDS = [
   { cmd: 'experience', desc: 'Scroll to Experience section', action: 'scroll', target: 'experience' },
   { cmd: 'services', desc: 'Scroll to Services section', action: 'scroll', target: 'services' },
   { cmd: 'home', desc: 'Scroll to top', action: 'scroll', target: 'home' },
+  { cmd: 'search', desc: 'Go to search page', action: 'navigate', target: '/search' },
   { cmd: 'help', desc: 'Show this help', action: 'help' },
   { cmd: 'clear', desc: 'Clear input', action: 'clear' },
 ];
@@ -83,7 +84,11 @@ function CommandBar() {
     if (suggestion.action === 'scroll') {
       scrollTo(suggestion.target);
     } else if (suggestion.action === 'navigate') {
-      navigate(`/project/${suggestion.target}`);
+      if (suggestion.target.startsWith('/')) {
+        navigate(suggestion.target);
+      } else {
+        navigate(`/project/${suggestion.target}`);
+      }
     } else if (suggestion.action === 'help') {
       setHelpVisible(true);
     }
@@ -133,7 +138,7 @@ function CommandBar() {
         )}
       </div>
 
-      {filtered.length > 0 && (
+      {filtered.length > 0 || (focused && input.trim()) ? (
         <div className="command-bar-dropdown">
           {filtered.map((s, i) => (
             <div key={s.cmd + i} className="command-bar-item" onClick={() => execute(s)}>
@@ -142,8 +147,15 @@ function CommandBar() {
               <span className="command-bar-item-action">{s.action === 'navigate' ? '→' : s.action === 'scroll' ? '↓' : ''}</span>
             </div>
           ))}
+          {input.trim() && (
+            <div className="command-bar-item" onClick={() => { navigate(`/search?q=${encodeURIComponent(input.trim())}`); setInput(''); setFocused(false); inputRef.current?.blur(); }}>
+              <span className="command-bar-item-cmd" style={{ color: 'var(--primary-color)' }}>Search all</span>
+              <span className="command-bar-item-desc">View all results for "{input.trim()}"</span>
+              <span className="command-bar-item-action"><FiExternalLink size={12} /></span>
+            </div>
+          )}
         </div>
-      )}
+      ) : null}
 
       {helpVisible && (
         <div className="command-bar-dropdown command-bar-help">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FaBars, FaTimes, FaSun, FaMoon, FaGithub, FaLinkedin, FaTwitter, FaTerminal } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
@@ -13,6 +14,7 @@ const navLinks = [
 ];
 
 function Header({ onToggleTerminal }) {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -41,9 +43,21 @@ function Header({ onToggleTerminal }) {
   const handleClick = (e, href) => {
     e.preventDefault();
     setMenuOpen(false);
+    if (href.startsWith('/')) {
+      navigate(href);
+      return;
+    }
     const id = href.slice(1);
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    if (window.location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const isLight = theme === 'light';

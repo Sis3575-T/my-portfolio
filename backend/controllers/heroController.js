@@ -22,7 +22,17 @@ exports.getHeroById = async (req, res) => {
 
 exports.createHero = async (req, res) => {
   try {
-    const hero = await Hero.create(req.body);
+    const body = { ...req.body };
+    if (req.file) {
+      body.avatar = '/uploads/' + req.file.filename;
+    }
+    if (typeof body.socialLinks === 'string') {
+      try { body.socialLinks = JSON.parse(body.socialLinks); } catch {}
+    }
+    if (typeof body.buttons === 'string') {
+      try { body.buttons = JSON.parse(body.buttons); } catch {}
+    }
+    const hero = await Hero.create(body);
     res.status(201).json({ success: true, data: hero });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -31,7 +41,17 @@ exports.createHero = async (req, res) => {
 
 exports.updateHero = async (req, res) => {
   try {
-    const hero = await Hero.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    const body = { ...req.body };
+    if (req.file) {
+      body.avatar = '/uploads/' + req.file.filename;
+    }
+    if (typeof body.socialLinks === 'string') {
+      try { body.socialLinks = JSON.parse(body.socialLinks); } catch {}
+    }
+    if (typeof body.buttons === 'string') {
+      try { body.buttons = JSON.parse(body.buttons); } catch {}
+    }
+    const hero = await Hero.findByIdAndUpdate(req.params.id, body, { new: true, runValidators: true });
     if (!hero) return res.status(404).json({ success: false, message: 'Hero not found' });
     res.json({ success: true, data: hero });
   } catch (error) {

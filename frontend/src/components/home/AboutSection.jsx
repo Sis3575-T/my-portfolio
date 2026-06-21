@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiCode, FiLayers, FiDatabase, FiTrendingUp } from 'react-icons/fi';
 import profilePhoto from '../../assets/profile-photo.jpg';
+import { publicApi, imageUrl } from '../../utils/api';
 
 const stats = [
   { number: '2+', label: 'Years Learning' },
@@ -18,6 +19,14 @@ const detailCards = [
 ];
 
 function AboutSection() {
+  const [avatarUrl, setAvatarUrl] = useState('');
+
+  useEffect(() => {
+    publicApi.getHero().then(({ data }) => {
+      if (data?.data?.avatar) setAvatarUrl(imageUrl(data.data.avatar));
+    }).catch(() => {});
+  }, []);
+
   return (
     <section id="about" className="about">
       <div className="about-container">
@@ -42,7 +51,7 @@ function AboutSection() {
             className="about-image-wrapper"
           >
             <div className="about-img-frame">
-              <img src={profilePhoto} alt="Sisay Temesgen" className="about-img" />
+              <img src={avatarUrl || profilePhoto} alt="Sisay Temesgen" className="about-img" />
               <div className="img-corner img-corner-tl" />
               <div className="img-corner img-corner-br" />
             </div>

@@ -10,6 +10,7 @@ function HeroManagement() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({
     name: '', title: '', introduction: '',
+    avatar: '', avatarFile: null,
     socialLinks: [{ platform: 'GitHub', url: '' }],
     buttons: [{ label: '', url: '', type: 'primary' }],
   });
@@ -31,7 +32,7 @@ function HeroManagement() {
 
   const openCreate = () => {
     setEditing(null);
-    setForm({ name: '', title: '', introduction: '', socialLinks: [{ platform: 'GitHub', url: '' }], buttons: [{ label: '', url: '', type: 'primary' }] });
+    setForm({ name: '', title: '', introduction: '', avatar: '', avatarFile: null, socialLinks: [{ platform: 'GitHub', url: '' }], buttons: [{ label: '', url: '', type: 'primary' }] });
     setShowModal(true);
   };
 
@@ -41,6 +42,8 @@ function HeroManagement() {
       name: hero.name || '',
       title: hero.title || '',
       introduction: hero.introduction || '',
+      avatar: hero.avatar || '',
+      avatarFile: null,
       socialLinks: (hero.socialLinks || []).length > 0 ? hero.socialLinks : [{ platform: 'GitHub', url: '' }],
       buttons: (hero.buttons || []).length > 0 ? hero.buttons : [{ label: '', url: '', type: 'primary' }],
     });
@@ -51,15 +54,19 @@ function HeroManagement() {
     setSaving(true);
     setMessage('');
     try {
-      const payload = {
-        ...form,
-        socialLinks: form.socialLinks.filter(s => s.platform || s.url),
-        buttons: form.buttons.filter(b => b.label),
-      };
+      const fd = new FormData();
+      fd.append('name', form.name);
+      fd.append('title', form.title);
+      fd.append('introduction', form.introduction);
+      fd.append('socialLinks', JSON.stringify(form.socialLinks.filter(s => s.platform || s.url)));
+      fd.append('buttons', JSON.stringify(form.buttons.filter(b => b.label)));
+      if (form.avatarFile) {
+        fd.append('avatar', form.avatarFile);
+      }
       if (editing) {
-        await adminApi.updateHero(editing._id, payload);
+        await adminApi.updateHero(editing._id, fd);
       } else {
-        await adminApi.createHero?.(payload);
+        await adminApi.createHero(fd);
       }
       await fetchHeroes();
       setShowModal(false);
@@ -138,6 +145,27 @@ function HeroManagement() {
               <div className="form-group">
                 <label>Introduction</label>
                 <textarea rows={3} value={form.introduction} onChange={(e) => setForm({ ...form, introduction: e.target.value })} />
+              </div>
+
+              <div className="form-group">
+                <label>Profile Photo</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {form.avatar && !form.avatarFile && (
+                    <img
+                      src={import.meta.env.VITE_API_URL?.replace('/api', '') + form.avatar}
+                      alt="Current"
+                      style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color)' }}
+                    />
+                  )}
+                  {form.avatarFile && (
+                    <img
+                      src={URL.createObjectURL(form.avatarFile)}
+                      alt="Preview"
+                      style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-color)' }}
+                    />
+                  )}
+                  <input type="file" accept="image/*" onChange={e => setForm({ ...form, avatarFile: e.target.files[0] })} />
+                </div>
               </div>
 
               <div className="form-section-title">Social Links</div>

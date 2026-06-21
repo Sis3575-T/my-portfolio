@@ -197,12 +197,12 @@ function Terminal({ onClose }) {
     contact: () => {
       addTypedLine('Contact Information', 'highlight');
       setTimeout(() => addLine('  Email:    sisay3575@gmail.com', 'output'), 200);
-      setTimeout(() => addLine('  GitHub:   github.com/Sis3575-T', 'output'), 300);
+      setTimeout(() => addLine('  GitHub:   https://github.com/Sis3575-T', 'output'), 300);
       setTimeout(() => addLine('  LinkedIn: linkedin.com/in/sisay-temesgen', 'output'), 400);
     },
     social: () => {
       addTypedLine('Social Links', 'highlight');
-      setTimeout(() => addLine('  GitHub   -> github.com/Sis3575-T', 'output'), 200);
+      setTimeout(() => addLine('  GitHub   -> https://github.com/Sis3575-T', 'output'), 200);
       setTimeout(() => addLine('  LinkedIn -> linkedin.com/in/sisay-temesgen', 'output'), 300);
       setTimeout(() => addLine('  Twitter  -> twitter.com', 'output'), 400);
       setTimeout(() => addLine('  Email    -> sisay3575@gmail.com', 'output'), 500);

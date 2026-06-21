@@ -8,7 +8,7 @@ const EMAILJS_TEMPLATE_ID = 'template_kj2fx4o';
 const EMAILJS_PUBLIC_KEY = 'ovBEFSKgggx5XF6Qk';
 
 function ContactSection() {
-  const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +24,7 @@ function ContactSection() {
         {
           from_name: form.name,
           from_email: form.email,
+          from_phone: form.phone,
           subject: 'Contact Form Submission',
           message: form.message,
           to_email: 'sisay3575@gmail.com',
@@ -31,7 +32,7 @@ function ContactSection() {
         EMAILJS_PUBLIC_KEY
       );
       setSubmitted(true);
-      setForm({ name: '', email: '', message: '' });
+      setForm({ name: '', email: '', phone: '', message: '' });
       setTimeout(() => setSubmitted(false), 3000);
     } catch (err) {
       setError('Failed to send. Please email me directly at sisay3575@gmail.com');
@@ -153,6 +154,16 @@ function ContactSection() {
                     placeholder="your@email.com"
                   />
                 </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="phone">Phone</label>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="+251 XXX XXX XXX"
+                />
               </div>
               <div className="form-group">
                 <label htmlFor="message">Message</label>

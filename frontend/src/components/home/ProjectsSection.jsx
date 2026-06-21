@@ -20,8 +20,6 @@ function ProjectsSection() {
     fetchProjects();
   }, []);
 
-  if (projects.length === 0) return null;
-
   return (
     <section id="projects" className="projects">
       <div className="projects-container">
