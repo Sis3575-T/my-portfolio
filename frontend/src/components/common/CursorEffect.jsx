@@ -1,1 +1,1 @@
-// REMOVED — Clean UI without custom cursor
+export default function CursorEffect() { return null; }

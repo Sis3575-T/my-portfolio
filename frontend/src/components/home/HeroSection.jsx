@@ -134,16 +134,6 @@ function HeroSection() {
               download
               className="btn btn-primary"
               style={{ background: 'transparent', border: '1.5px solid var(--accent-color)', color: 'var(--accent-color)' }}
-              onMouseEnter={(e) => {
-                e.target.style.background = 'rgba(34, 211, 238, 0.1)';
-                e.target.style.transform = 'translateY(-3px)';
-                e.target.style.boxShadow = '0 8px 25px var(--glow-accent)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'transparent';
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }}
             >
               Download CV <FiDownload />
             </a>

@@ -1,44 +1,34 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FiMonitor, FiServer, FiLayers, FiSmartphone, FiLink, FiDatabase } from 'react-icons/fi';
+import { FiCode, FiSmartphone, FiServer, FiLayout } from 'react-icons/fi';
 
 const services = [
   {
-    icon: <FiMonitor size={28} />,
+    icon: <FiLayout size={24} />,
     title: 'Frontend Development',
-    description: 'Responsive, performant web applications built with React and modern frontend frameworks. Focused on accessibility, user experience, and clean component architecture.',
+    desc: 'Responsive, accessible UIs built with React and modern CSS. Pixel-perfect implementations from Figma or any design system.',
   },
   {
-    icon: <FiServer size={28} />,
+    icon: <FiServer size={24} />,
     title: 'Backend Development',
-    description: 'Scalable server-side architecture with Node.js and Express. RESTful APIs built for performance, security, and reliability with proper error handling.',
+    desc: 'RESTful APIs and server-side logic with Node.js, Express, and MongoDB. Authentication, validation, and data modeling.',
   },
   {
-    icon: <FiLayers size={28} />,
-    title: 'Full Stack Development',
-    description: 'End-to-end application development from database design to deployment. Complete ownership of technical delivery with modern development practices.',
+    icon: <FiCode size={24} />,
+    title: 'Full Stack Projects',
+    desc: 'End-to-end web applications from concept to deployment. Architecture planning, database design, and cloud hosting.',
   },
   {
-    icon: <FiSmartphone size={28} />,
-    title: 'Responsive Web Design',
-    description: 'Mobile-first designs that work seamlessly across all devices and screen sizes. Clean layouts with consistent spacing and visual hierarchy.',
-  },
-  {
-    icon: <FiLink size={28} />,
-    title: 'API Development',
-    description: 'Robust, well-documented RESTful APIs with comprehensive testing, rate limiting, and security best practices. Built for scale and maintainability.',
-  },
-  {
-    icon: <FiDatabase size={28} />,
-    title: 'Database Design',
-    description: 'Optimized database schemas for MongoDB and PostgreSQL. Focus on data integrity, query performance, and scalable data architecture.',
+    icon: <FiSmartphone size={24} />,
+    title: 'Responsive Design',
+    desc: 'Mobile-first layouts that work seamlessly across all devices. Performance optimized with modern tooling.',
   },
 ];
 
 function ServicesSection() {
   return (
     <section id="services" className="skills">
-      <div className="skills-container">
+      <div className="skills-container" style={{ maxWidth: '1000px' }}>
         <motion.div
           initial={{ opacity: 0, y: 36 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -46,39 +36,27 @@ function ServicesSection() {
           transition={{ duration: 0.6 }}
           className="text-center"
         >
-          <span className="section-tag">Services</span>
-          <h2 className="section-title">What I Offer</h2>
+          <span className="section-tag">What I Do</span>
+          <h2 className="section-title">Services</h2>
           <div className="section-line" />
           <p className="section-subtitle" style={{ margin: '1rem auto 0' }}>
-            Professional services tailored to build modern, scalable digital solutions.
+            From concept to deployment — building modern web solutions.
           </p>
         </motion.div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '1.5rem',
-          marginTop: '3rem',
-        }}>
+        <div className="about-cards" style={{ marginTop: '3rem' }}>
           {services.map((service, idx) => (
             <motion.div
               key={service.title}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 36 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.5, delay: idx * 0.08 }}
+              transition={{ duration: 0.5, delay: idx * 0.1 }}
               className="about-card"
-              style={{ padding: '2rem' }}
             >
-              <div className="card-icon-wrap" style={{ marginBottom: '1.25rem' }}>
-                {service.icon}
-              </div>
-              <h4 className="card-title" style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>
-                {service.title}
-              </h4>
-              <p className="card-content" style={{ fontSize: '0.9rem', lineHeight: 1.7 }}>
-                {service.description}
-              </p>
+              <div className="card-icon-wrap">{service.icon}</div>
+              <h4 className="card-title">{service.title}</h4>
+              <p className="card-content">{service.desc}</p>
             </motion.div>
           ))}
         </div>

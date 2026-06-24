@@ -2,10 +2,14 @@ const Message = require('../models/Message');
 const Project = require('../models/Project');
 const Blog = require('../models/Blog');
 const Media = require('../models/Media');
+const Skill = require('../models/Skill');
+const Certificate = require('../models/Certificate');
+const Experience = require('../models/Experience');
+const Education = require('../models/Education');
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const [totalMessages, unreadMessages, totalProjects, activeProjects, totalBlogs, publishedBlogs, totalMedia, totalDownloads] = await Promise.all([
+    const [totalMessages, unreadMessages, totalProjects, activeProjects, totalBlogs, publishedBlogs, totalMedia, totalDownloads, totalSkills, totalCertificates, totalExperiences, totalEducation] = await Promise.all([
       Message.countDocuments(),
       Message.countDocuments({ isRead: false }),
       Project.countDocuments(),
@@ -14,6 +18,10 @@ exports.getDashboardStats = async (req, res) => {
       Blog.countDocuments({ isActive: true }),
       Media.countDocuments(),
       Media.countDocuments({ category: 'resume' }),
+      Skill.countDocuments(),
+      Certificate.countDocuments(),
+      Experience.countDocuments(),
+      Education.countDocuments(),
     ]);
     res.json({
       success: true,
@@ -23,6 +31,10 @@ exports.getDashboardStats = async (req, res) => {
         blogs: { total: totalBlogs, published: publishedBlogs },
         media: { total: totalMedia },
         downloads: totalDownloads,
+        skills: totalSkills,
+        certificates: totalCertificates,
+        experiences: totalExperiences,
+        education: totalEducation,
       },
     });
   } catch (error) {

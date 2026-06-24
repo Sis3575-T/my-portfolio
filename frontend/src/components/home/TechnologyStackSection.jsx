@@ -1,1 +1,1 @@
-// REMOVED — Consolidated into Skills section
+export default function TechnologyStackSection() { return null; }

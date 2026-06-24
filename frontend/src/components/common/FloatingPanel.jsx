@@ -1,1 +1,1 @@
-// REMOVED — Clean UI without floating panel
+export default function FloatingPanel() { return null; }

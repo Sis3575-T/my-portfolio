@@ -65,7 +65,7 @@
 
 .project-link-button {
   padding: 0.75rem 1.75rem;
-  background: #818cf8;
+  background: #2563EB;
   color: #fff;
   text-decoration: none;
   border-radius: 8px;
@@ -76,7 +76,7 @@
 }
 
 .project-link-button:hover {
-  background: #6366f1;
+  background: #1d4ed8;
   transform: scale(1.05);
 }
 

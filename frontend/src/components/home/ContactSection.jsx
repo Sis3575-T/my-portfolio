@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGithub, FaLinkedin, FaTwitter, FaPaperPlane, FaCheck, FaSpinner } from 'react-icons/fa';
+import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGithub, FaLinkedin, FaTwitter, FaPaperPlane, FaCheck, FaSpinner, FaUser, FaCommentAlt } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import emailjs from '@emailjs/browser';
 
@@ -134,47 +134,59 @@ function ContactSection() {
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="name">Name</label>
-                  <input
-                    id="name"
-                    type="text"
-                    required
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Your name"
-                  />
+                  <div className="input-icon-wrap">
+                    <input
+                      id="name"
+                      type="text"
+                      required
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="Your name"
+                    />
+                    <FaUser className="input-icon" size={14} />
+                  </div>
                 </div>
                 <div className="form-group">
                   <label htmlFor="email">Email</label>
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="your@email.com"
-                  />
+                  <div className="input-icon-wrap">
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      placeholder="your@email.com"
+                    />
+                    <FaEnvelope className="input-icon" size={14} />
+                  </div>
                 </div>
               </div>
               <div className="form-group">
                 <label htmlFor="phone">Phone</label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  placeholder="+251 XXX XXX XXX"
-                />
+                <div className="input-icon-wrap">
+                  <input
+                    id="phone"
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="+251 XXX XXX XXX"
+                  />
+                  <FaPhone className="input-icon" size={14} />
+                </div>
               </div>
               <div className="form-group">
                 <label htmlFor="message">Message</label>
-                <textarea
-                  id="message"
-                  required
-                  value={form.message}
-                  onChange={(e) => setForm({ ...form, message: e.target.value })}
-                  placeholder="Tell me about your project or opportunity..."
-                  rows={5}
-                />
+                <div className="input-icon-wrap">
+                  <textarea
+                    id="message"
+                    required
+                    value={form.message}
+                    onChange={(e) => setForm({ ...form, message: e.target.value })}
+                    placeholder="Tell me about your project or opportunity..."
+                    rows={5}
+                  />
+                  <FaCommentAlt className="input-icon textarea-icon" size={14} />
+                </div>
               </div>
               {error && (
                 <div className="form-status error">{error}</div>

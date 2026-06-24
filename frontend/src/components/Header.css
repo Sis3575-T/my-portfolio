@@ -37,7 +37,7 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: #6366f1;
+  background: #2563EB;
   color: #fff;
   font-size: 0.8rem;
   font-weight: 800;
@@ -85,12 +85,12 @@
 }
 
 .nav-link:hover {
-  color: #6366f1;
+  color: #2563EB;
   background: #f1f5f9;
 }
 
 .nav-link--active {
-  color: #6366f1;
+  color: #2563EB;
   font-weight: 600;
 }
 
@@ -102,12 +102,12 @@
   transform: translateX(-50%);
   width: 16px;
   height: 2px;
-  background: #6366f1;
+  background: #2563EB;
 }
 
 .nav-hire {
   margin-left: 0.75rem;
-  background: #6366f1;
+  background: #2563EB;
   color: #fff !important;
   padding: 0.4rem 1rem;
   border-radius: 6px;
@@ -118,7 +118,7 @@
 }
 
 .nav-hire:hover {
-  background: #4f46e5;
+  background: #1d4ed8;
   transform: translateY(-1px);
   text-decoration: none;
 }

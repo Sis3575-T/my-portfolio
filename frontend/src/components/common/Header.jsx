@@ -19,13 +19,9 @@ function Header({ onToggleTerminal }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
-  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     const onScroll = () => {
-      const winScroll = document.documentElement.scrollTop;
-      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      setScrollProgress((winScroll / height) * 100);
       setScrolled(window.scrollY > 50);
       const ids = navLinks.map(l => l.href.slice(1));
       for (let i = ids.length - 1; i >= 0; i--) {
@@ -64,138 +60,107 @@ function Header({ onToggleTerminal }) {
 
   return (
     <>
-      <div
-        className="scroll-progress"
-        style={{ width: `${scrollProgress}%` }}
-      />
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? 'py-3 shadow-lg'
-            : 'py-5'
+          scrolled ? 'py-4' : 'py-6'
         }`}
         style={{
-          background: scrolled
-            ? isLight
-              ? 'rgba(255,255,255,0.9)'
-              : 'rgba(2,6,23,0.95)'
-            : 'transparent',
-          backdropFilter: scrolled ? 'blur(20px)' : 'none',
-          borderBottom: scrolled ? '1px solid var(--glass-border)' : '1px solid transparent',
-          boxShadow: scrolled ? `0 8px 32px ${isLight ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.5)'}` : 'none',
+          background: '#000000',
+          borderBottom: scrolled ? '1px solid rgba(255,255,255,0.08)' : '1px solid transparent',
+          boxShadow: scrolled ? '0 4px 20px rgba(0,0,0,0.3)' : 'none',
         }}
       >
-        <div className="max-w-container mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-[1140px] mx-auto px-6 flex items-center justify-between">
           <a
             href="#home"
             onClick={(e) => handleClick(e, '#home')}
-            className="text-xl font-bold no-underline"
+            className="flex items-center gap-3 font-bold no-underline"
             style={{
-              color: 'var(--primary-color)',
-              letterSpacing: '1px',
+              color: '#FFFFFF',
+              fontSize: '1.15rem',
+              letterSpacing: '-0.02em',
             }}
           >
-            Sisay Temesgen
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                background: '#2563EB',
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <svg width={20} height={20} viewBox="0 0 36 32">
+                <text x="18" y="25" font-family="Inter, Arial, sans-serif" font-weight="700" font-size="22" fill="white" text-anchor="middle" letter-spacing="-1">ST</text>
+              </svg>
+            </div>
+            <span style={{ fontWeight: 600 }}>Sisay Temesgen</span>
           </a>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-0.5">
             {navLinks.map(link => (
               <a
                 key={link.href}
                 href={link.href}
                 onClick={(e) => handleClick(e, link.href)}
-                className="relative px-4 py-2 text-sm font-medium rounded transition-colors duration-200 no-underline"
+                className="relative px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 no-underline"
                 style={{
-                  color: activeSection === link.href.slice(1)
-                    ? 'var(--primary-color)'
-                    : 'var(--text-light)',
+                  color: activeSection === link.href.slice(1) ? '#FFFFFF' : 'rgba(255,255,255,0.6)',
+                  background: activeSection === link.href.slice(1) ? 'rgba(255,255,255,0.1)' : 'transparent',
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.color = 'var(--primary-color)';
+                  if (activeSection !== link.href.slice(1)) {
+                    e.target.style.color = '#FFFFFF';
+                    e.target.style.background = 'rgba(255,255,255,0.06)';
+                  }
                 }}
                 onMouseLeave={(e) => {
                   if (activeSection !== link.href.slice(1)) {
-                    e.target.style.color = 'var(--text-light)';
+                    e.target.style.color = 'rgba(255,255,255,0.6)';
+                    e.target.style.background = 'transparent';
                   }
                 }}
               >
                 {link.label}
                 <span
-                  className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300"
+                  className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300"
                   style={{
-                    width: activeSection === link.href.slice(1) ? '20px' : '0px',
-                    background: 'var(--primary-color)',
+                    width: activeSection === link.href.slice(1) ? '18px' : '0px',
+                    background: '#FFFFFF',
                   }}
                 />
               </a>
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com/Sis3575-T"
-              target="_blank"
-              rel="noreferrer"
-              className="hidden md:flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 no-underline"
-              style={{
-                color: 'var(--text-light)',
-                background: 'var(--glass-bg)',
-                border: '1px solid var(--glass-border)',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = 'var(--primary-color)';
-                e.target.style.borderColor = 'var(--primary-color)';
-                e.target.style.transform = 'translateY(-3px)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = 'var(--text-light)';
-                e.target.style.borderColor = 'var(--glass-border)';
-                e.target.style.transform = 'translateY(0)';
-              }}
-              aria-label="GitHub"
-            >
-              <FaGithub size={16} />
-            </a>
-            <a
-              href="https://linkedin.com/in/sisay-temesgen"
-              target="_blank"
-              rel="noreferrer"
-              className="hidden md:flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 no-underline"
-              style={{
-                color: 'var(--text-light)',
-                background: 'var(--glass-bg)',
-                border: '1px solid var(--glass-border)',
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = 'var(--primary-color)';
-                e.target.style.borderColor = 'var(--primary-color)';
-                e.target.style.transform = 'translateY(-3px)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = 'var(--text-light)';
-                e.target.style.borderColor = 'var(--glass-border)';
-                e.target.style.transform = 'translateY(0)';
-              }}
-              aria-label="LinkedIn"
-            >
-              <FaLinkedin size={16} />
-            </a>
-
+          <div className="flex items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="theme-toggle"
+              className="flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200"
+              style={{
+                color: 'rgba(255,255,255,0.6)',
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.12)',
+              }}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             >
-              {theme === 'dark' ? <FaSun size={15} /> : <FaMoon size={15} />}
+              {theme === 'dark' ? <FaSun size={14} /> : <FaMoon size={14} />}
             </button>
 
             <button
-              className="md:hidden text-2xl p-1"
-              style={{ color: 'var(--text-white)' }}
+              className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg"
+              style={{
+                color: 'rgba(255,255,255,0.6)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.08)',
+              }}
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle menu"
             >
-              {menuOpen ? <FaTimes /> : <FaBars />}
+              {menuOpen ? <FaTimes size={15} /> : <FaBars size={15} />}
             </button>
           </div>
         </div>
@@ -209,7 +174,7 @@ function Header({ onToggleTerminal }) {
               transition={{ duration: 0.3 }}
               className="md:hidden fixed top-0 right-0 h-screen w-[70%] flex flex-col justify-center items-center gap-8 z-50"
               style={{
-                background: isLight ? 'var(--secondary-color)' : '#111827',
+                background: '#000000',
                 boxShadow: '-10px 0 40px rgba(0,0,0,0.5)',
               }}
             >
@@ -218,11 +183,9 @@ function Header({ onToggleTerminal }) {
                   key={link.href}
                   href={link.href}
                   onClick={(e) => handleClick(e, link.href)}
-                  className="text-lg font-medium no-underline transition-colors"
+                  className="text-base font-medium no-underline transition-colors"
                   style={{
-                    color: activeSection === link.href.slice(1)
-                      ? 'var(--primary-color)'
-                      : 'var(--text-light)',
+                    color: activeSection === link.href.slice(1) ? '#FFFFFF' : 'rgba(255,255,255,0.6)',
                   }}
                 >
                   {link.label}
