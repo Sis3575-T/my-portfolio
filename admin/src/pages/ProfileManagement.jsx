@@ -94,6 +94,9 @@ export default function ProfileManagement() {
         payload.languages = payload.languages.split(',').map(s => s.trim()).filter(Boolean).join(', ');
       }
       await api.put('/settings', payload);
+      if (form.profilePhoto) {
+        await api.put('/hero', { avatar: form.profilePhoto });
+      }
       toast.success('Profile saved successfully');
     } catch (err) {
       toast.error('Failed to save profile');
@@ -109,6 +112,9 @@ export default function ProfileManagement() {
       const { data } = await api.post('/media/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       const url = data.data?.url || data.url || '';
       await api.put('/settings', { [field]: url });
+      if (field === 'profilePhoto') {
+        await api.put('/hero', { avatar: url });
+      }
       setForm(prev => ({ ...prev, [field]: url }));
       toast.success(`${field} updated`);
     } catch {

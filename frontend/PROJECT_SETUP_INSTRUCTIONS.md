@@ -1,7 +1,4 @@
-# Ethiopian Tourist Project Setup Instructions
-
-## Screenshot Added
-I've set up the project structure to display the Ethiopian Tourist Destination project with a professional card layout.
+# Ethiopiane project structure to display the Ethiopian Tourist Destination project with a professional card layout.
 
 ## To Complete the Setup:
 
