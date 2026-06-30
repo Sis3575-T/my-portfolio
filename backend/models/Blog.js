@@ -10,8 +10,10 @@ const blogSchema = new mongoose.Schema({
   tags: [{ type: String, trim: true }],
   readingTime: { type: Number, default: 5 },
   featured: { type: Boolean, default: false },
-  publishedAt: { type: Date, default: Date.now },
+  publishedAt: { type: Date, default: null },
   isActive: { type: Boolean, default: true },
+  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  scheduledAt: { type: Date, default: null },
 }, { timestamps: true });
 
 blogSchema.index({ featured: -1, publishedAt: -1 });

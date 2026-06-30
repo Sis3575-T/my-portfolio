@@ -10,6 +10,9 @@ const certificateSchema = new mongoose.Schema({
   image: { type: String, default: '' },
   visible: { type: Boolean, default: true },
   order: { type: Number, default: 0 },
+  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  publishedAt: { type: Date, default: null },
+  scheduledAt: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Certificate', certificateSchema);

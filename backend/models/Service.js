@@ -7,6 +7,9 @@ const serviceSchema = new mongoose.Schema({
   features: [{ type: String, trim: true }],
   order: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
+  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  publishedAt: { type: Date, default: null },
+  scheduledAt: { type: Date, default: null },
 }, { timestamps: true });
 
 serviceSchema.index({ order: 1 });

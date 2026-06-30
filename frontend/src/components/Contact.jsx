@@ -1,164 +1,161 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import emailjs from '@emailjs/browser';
-import './Contact.css';
+import React, { useState } from 'react';
+import { websiteApi } from '../api';
+import Toast from './Toast';
 
-const EMAILJS_SERVICE_ID  = 'service_w8l2h6v';
-const EMAILJS_TEMPLATE_ID = 'template_kj2fx4o';
-const EMAILJS_PUBLIC_KEY  = 'ovBEFSKgggx5XF6Qk';
-
-const inView = (delay = 0) => ({
-  initial: { opacity: 0, y: 30 },
-  whileInView: { opacity: 1, y: 0 },
-  transition: { duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] },
-  viewport: { once: true },
-});
-
-const CONTACTS = [
-  { icon: '✉️', label: 'Email', value: 'sisay3575@gmail.com', href: 'mailto:sisay3575@gmail.com' },
-  { icon: '📱', label: 'Phone', value: '+251 935 756 054', href: 'tel:+251935756054' },
-  { icon: '💻', label: 'GitHub', value: 'github.com/Sis3575-T', href: 'https://github.com/Sis3575-T' },
-  { icon: '📍', label: 'Location', value: 'Bahir Dar, Ethiopia', href: null },
-];
-
-const Contact = () => {
+function Contact({ settings }) {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
-  const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState(null);
 
-  const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  const validate = () => {
+    const errs = {};
+    if (!form.name.trim()) errs.name = 'Name is required';
+    if (!form.email.trim()) errs.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Invalid email address';
+    if (!form.message.trim()) errs.message = 'Message is required';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
+    if (!validate()) return;
+    setSubmitting(true);
     try {
-      await emailjs.send(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        {
-          from_name: form.name,
-          from_email: form.email,
-          subject: form.subject,
-          message: form.message,
-          to_email: 'sisay3575@gmail.com',
-        },
-        EMAILJS_PUBLIC_KEY
-      );
-      setSent(true);
+      await websiteApi.submitContact(form);
+      setToast({ type: 'success', message: 'Message sent successfully!' });
       setForm({ name: '', email: '', subject: '', message: '' });
-      setTimeout(() => setSent(false), 6000);
     } catch (err) {
-      setError('Failed to send. Please email me directly at sisay3575@gmail.com');
+      setToast({ type: 'error', message: err.response?.data?.message || 'Failed to send message' });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: '' });
     }
   };
 
   return (
-    <section className="contact" id="contact">
+    <section className="contact section" id="contact">
       <div className="container">
-        <motion.div {...inView()}>
-          <p className="section-tag">Say Hello</p>
+        <div className="section-header">
           <h2 className="section-title">Get In Touch</h2>
-        </motion.div>
-
-        <div className="contact-form-wrap">
-          <motion.div {...inView(0.1)}>
-            {sent ? (
-              <div className="form-success">
-                <span className="success-icon">✅</span>
-                <h4>Message Sent!</h4>
-                <p>Thank you for reaching out. I'll get back to you within 24 hours.</p>
-              </div>
-            ) : (
-              <form className="contact-form" onSubmit={handleSubmit} noValidate>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="name">Full Name</label>
-                    <input
-                      type="text" id="name" name="name"
-                      placeholder="John Doe"
-                      value={form.name} onChange={handleChange} required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="email">Email Address</label>
-                    <input
-                      type="email" id="email" name="email"
-                      placeholder="john@example.com"
-                      value={form.email} onChange={handleChange} required
-                    />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label htmlFor="subject">Subject</label>
-                  <input
-                    type="text" id="subject" name="subject"
-                    placeholder="Project Inquiry / Job Opportunity"
-                    value={form.subject} onChange={handleChange} required
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="message">Message</label>
-                  <textarea
-                    id="message" name="message" rows="5"
-                    placeholder="Tell me about your project or opportunity..."
-                    value={form.message} onChange={handleChange} required
-                  />
-                </div>
-                <button type="submit" className="btn btn-primary form-submit" disabled={loading}>
-                  {loading ? 'Sending...' : 'Send Message →'}
-                </button>
-                {error && <p className="form-error">{error}</p>}
-              </form>
-            )}
-          </motion.div>
+          <div className="section-divider" />
         </div>
-
-        <motion.div className="contact-info" {...inView(0.15)}>
-          <div className="contact-items">
-            {CONTACTS.map((c, i) => (
-              <div className="contact-item" key={i}>
-                <div className="contact-item-icon">{c.icon}</div>
-                <div>
-                  <p className="contact-item-label">{c.label}</p>
-                  {c.href ? (
-                    <a
-                      href={c.href}
-                      className="contact-item-value"
-                      target={c.href.startsWith('http') ? '_blank' : undefined}
-                      rel={c.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                    >
-                      {c.value}
-                    </a>
-                  ) : (
-                    <p className="contact-item-value contact-item-value--plain">{c.value}</p>
-                  )}
+        <div className="contact-content">
+          <div className="contact-info">
+            <h3 className="contact-info-title">Let's talk about everything!</h3>
+            <p className="contact-info-text">Have a project in mind or just want to say hi? Fill out the form and I'll get back to you.</p>
+            <div className="contact-details">
+              {settings?.email && (
+                <div className="contact-detail">
+                  <div className="contact-detail-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  </div>
+                  <div>
+                    <span className="contact-detail-label">Email</span>
+                    <a href={`mailto:${settings.email}`} className="contact-detail-value">{settings.email}</a>
+                  </div>
                 </div>
+              )}
+              {settings?.phone && (
+                <div className="contact-detail">
+                  <div className="contact-detail-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  </div>
+                  <div>
+                    <span className="contact-detail-label">Phone</span>
+                    <span className="contact-detail-value">{settings.phone}</span>
+                  </div>
+                </div>
+              )}
+              {settings?.address && (
+                <div className="contact-detail">
+                  <div className="contact-detail-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  </div>
+                  <div>
+                    <span className="contact-detail-label">Location</span>
+                    <span className="contact-detail-value">{settings.address}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <form className="contact-form" onSubmit={handleSubmit} noValidate>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="name">Name</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="John Doe"
+                  className={errors.name ? 'error' : ''}
+                />
+                {errors.name && <span className="form-error">{errors.name}</span>}
               </div>
-            ))}
-          </div>
-
-          <div className="contact-social">
-            <a href="https://github.com/Sis3575-T" target="_blank" rel="noopener noreferrer" className="social-btn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-              </svg>
-              GitHub
-            </a>
-            <a href="mailto:sisay3575@gmail.com" className="social-btn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-              </svg>
-              Email Me
-            </a>
-          </div>
-        </motion.div>
+              <div className="form-group">
+                <label htmlFor="email">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  placeholder="john@example.com"
+                  className={errors.email ? 'error' : ''}
+                />
+                {errors.email && <span className="form-error">{errors.email}</span>}
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="subject">Subject</label>
+              <input
+                type="text"
+                id="subject"
+                name="subject"
+                value={form.subject}
+                onChange={handleChange}
+                placeholder="Project Collaboration"
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="message">Message</label>
+              <textarea
+                id="message"
+                name="message"
+                rows="5"
+                value={form.message}
+                onChange={handleChange}
+                placeholder="Tell me about your project..."
+                className={errors.message ? 'error' : ''}
+              />
+              {errors.message && <span className="form-error">{errors.message}</span>}
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" disabled={submitting} data-track="contact-submit">
+              {submitting ? (
+                <span className="spinner" />
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  Send Message
+                </>
+              )}
+            </button>
+          </form>
+        </div>
       </div>
+      {toast && <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} />}
     </section>
   );
-};
+}
 
 export default Contact;

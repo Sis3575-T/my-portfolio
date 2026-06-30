@@ -10,6 +10,9 @@ const testimonialSchema = new mongoose.Schema({
   featured: { type: Boolean, default: false },
   order: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
+  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  publishedAt: { type: Date, default: null },
+  scheduledAt: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Testimonial', testimonialSchema);

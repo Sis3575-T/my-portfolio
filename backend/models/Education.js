@@ -12,6 +12,9 @@ const educationSchema = new mongoose.Schema({
   achievements: [{ type: String, trim: true }],
   isActive: { type: Boolean, default: true },
   order: { type: Number, default: 0 },
+  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  publishedAt: { type: Date, default: null },
+  scheduledAt: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Education', educationSchema);

@@ -10,6 +10,9 @@ const aboutSchema = new mongoose.Schema({
     suffix: { type: String, default: '' },
   }],
   isActive: { type: Boolean, default: true },
+  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  publishedAt: { type: Date, default: null },
+  scheduledAt: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('About', aboutSchema);

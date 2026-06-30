@@ -1,88 +1,61 @@
-import { motion } from 'framer-motion';
-import './Skills.css';
+import React, { useState, useMemo } from 'react';
 
-const categories = [
-  {
-    icon: '🎨',
-    title: 'Frontend',
-    bg: '#eef2ff',
-    skills: ['HTML5', 'CSS3', 'JavaScript (ES6+)', 'TypeScript', 'React', 'Angular', 'Next.js', 'Responsive Design', 'Framer Motion'],
-  },
-  {
-    icon: '⚙️',
-    title: 'Backend',
-    bg: '#ecfeff',
-    skills: ['Node.js', 'Express.js', 'C#', '.NET', 'Ruby', 'Ruby on Rails', 'REST APIs'],
-  },
-  {
-    icon: '📚',
-    title: 'Libraries',
-    bg: '#fef3c7',
-    skills: ['Redux', 'Axios', 'Bootstrap', 'Tailwind CSS', 'jQuery'],
-  },
-  {
-    icon: '🛠️',
-    title: 'Tools & DevOps',
-    bg: '#f5f3ff',
-    skills: ['Git & GitHub', 'VS Code', 'Vite', 'Vercel', 'Render', 'Docker', 'CI/CD', 'Postman'],
-  },
-  {
-    icon: '🔗',
-    title: 'Blockchain & More',
-    bg: '#ecfdf5',
-    skills: ['Solidity', 'Web3', 'Smart Contracts', 'dApps'],
-  },
-];
+function Skills({ skills }) {
+  const [activeCategory, setActiveCategory] = useState('All');
 
-const container = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1 } },
-};
+  const categories = useMemo(() => {
+    if (!skills || skills.length === 0) return [];
+    const cats = ['All', ...new Set(skills.map(s => s.category).filter(Boolean))];
+    return cats;
+  }, [skills]);
 
-const card = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
-};
+  const filtered = useMemo(() => {
+    if (!skills) return [];
+    if (activeCategory === 'All') return skills;
+    return skills.filter(s => s.category === activeCategory);
+  }, [skills, activeCategory]);
 
-const Skills = () => (
-  <section className="skills" id="skills">
-    <div className="container">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        viewport={{ once: true }}
-      >
-        <p className="section-tag">What I Know</p>
-        <h2 className="section-title">Technical Skills</h2>
-        <p className="section-subtitle">
-          Technologies and tools I use to build modern, scalable web applications.
-        </p>
-      </motion.div>
+  if (!skills || skills.length === 0) return null;
 
-      <motion.div
-        className="skills-grid"
-        variants={container}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true }}
-      >
-        {categories.map((cat, i) => (
-          <motion.div className="skill-card" key={i} variants={card}>
-            <div className="skill-card-header" style={{ '--cat-bg': cat.bg }}>
-              <span className="skill-card-icon">{cat.icon}</span>
-              <h3 className="skill-card-title">{cat.title}</h3>
+  return (
+    <section className="skills section" id="skills">
+      <div className="container">
+        <div className="section-header">
+          <h2 className="section-title">Skills & Technologies</h2>
+          <div className="section-divider" />
+        </div>
+        {categories.length > 1 && (
+          <div className="skills-tabs">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                className={`skills-tab${activeCategory === cat ? ' active' : ''}`}
+                onClick={() => setActiveCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="skills-grid">
+          {filtered.map(skill => (
+            <div key={skill._id} className="skill-item">
+              <div className="skill-header">
+                <span className="skill-name">{skill.name}</span>
+                <span className="skill-percent">{skill.proficiency}%</span>
+              </div>
+              <div className="skill-bar">
+                <div
+                  className="skill-bar-fill"
+                  style={{ width: `${skill.proficiency}%` }}
+                />
+              </div>
             </div>
-            <div className="skill-tags">
-              {cat.skills.map((s, j) => (
-                <span key={j} className="skill-tag">{s}</span>
-              ))}
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
-    </div>
-  </section>
-);
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default Skills;

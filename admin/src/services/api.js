@@ -1,13 +1,18 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+function getApiUrl() {
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isLocal) return 'http://localhost:5001/api';
+  return import.meta.env.VITE_API_URL || localStorage.getItem('api_url') || 'http://localhost:5001/api';
+}
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: getApiUrl(),
   headers: { 'Content-Type': 'application/json' },
 });
 
 api.interceptors.request.use((config) => {
+  config.baseURL = getApiUrl();
   const token = localStorage.getItem('admin_token');
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -54,6 +59,22 @@ export const adminApi = {
   getResumeAnalytics: (params) => api.get('/analytics/resume', { params }),
   getContactAnalytics: (params) => api.get('/analytics/contact', { params }),
   getExportData: (params) => api.get('/analytics/export', { params, responseType: params.format === 'csv' ? 'blob' : 'json' }),
+
+  // New Visitor Analytics API
+  getLiveVisitors: () => api.get('/analytics/live'),
+  getVisitorsList: (params) => api.get('/analytics/visitors-list', { params }),
+  getVisitorById: (id) => api.get(`/analytics/visitors/${id}`),
+  getVisitorEvents: (id) => api.get(`/analytics/visitors/${id}/events`),
+  getCountries: () => api.get('/analytics/countries'),
+  getBrowserStatsNew: () => api.get('/analytics/browsers-stats'),
+  getDeviceStatsNew: () => api.get('/analytics/devices-stats'),
+  getOSStatsNew: () => api.get('/analytics/os-stats'),
+  getSources: () => api.get('/analytics/sources'),
+  getPagesStats: () => api.get('/analytics/pages-stats'),
+  getEventsStats: () => api.get('/analytics/events-stats'),
+  getBounceRate: (params) => api.get('/analytics/bounce-rate', { params }),
+  getSessionDuration: (params) => api.get('/analytics/duration', { params }),
+  getReport: (params) => api.get('/analytics/report', { params, responseType: params?.format === 'csv' ? 'blob' : 'json' }),
 
   // Hero
   getHero: () => api.get('/hero'),
@@ -153,6 +174,24 @@ export const adminApi = {
   reorderComponents: (pageId, items) => api.put(`/pages/${pageId}/components/reorder`, { items }),
   toggleComponent: (pageId, componentId) => api.patch(`/pages/${pageId}/components/${componentId}/toggle`),
   moveComponent: (pageId, componentId, targetPageId) => api.post(`/pages/${pageId}/components/${componentId}/move`, { targetPageId }),
+
+  // Sections (Component Builder)
+  getSections: (params) => api.get('/sections', { params }),
+  getSection: (id) => api.get(`/sections/${id}`),
+  createSection: (data) => api.post('/sections', data),
+  updateSection: (id, data) => api.put(`/sections/${id}`, data),
+  deleteSection: (id) => api.delete(`/sections/${id}`),
+  duplicateSection: (id) => api.post(`/sections/${id}/duplicate`),
+  getSectionStats: () => api.get('/sections/stats'),
+  updateSectionStatus: (id, status) => api.put(`/sections/${id}/status`, { status }),
+  reorderSection: (id, order) => api.put(`/sections/${id}/reorder`, { order }),
+  toggleSectionLock: (id, locked) => api.put(`/sections/${id}/lock`, { locked }),
+  saveSectionVersion: (id, data) => api.post(`/sections/${id}/versions`, data),
+  getSectionVersions: (id) => api.get(`/sections/${id}/versions`),
+  restoreSectionVersion: (id, versionId) => api.post(`/sections/${id}/restore/${versionId}`),
+  exportSection: (id) => api.get(`/sections/export/${id}`),
+  importSections: (components) => api.post('/sections/import', { components }),
+  bulkSectionAction: (action, ids) => api.post('/sections/bulk', { action, ids }),
 
   // Theme
   getTheme: () => api.get('/theme'),

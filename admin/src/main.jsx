@@ -5,6 +5,7 @@ import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { ToastProvider } from './components/Toast';
 import './index.css';
+import './admin-layout.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

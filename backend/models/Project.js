@@ -12,7 +12,9 @@ const projectSchema = new mongoose.Schema({
   category: { type: String, default: 'Full Stack' },
   order: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
-  publishedAt: { type: Date, default: Date.now },
+  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  publishedAt: { type: Date, default: null },
+  scheduledAt: { type: Date, default: null },
 }, { timestamps: true });
 
 projectSchema.index({ featured: -1, order: 1 });

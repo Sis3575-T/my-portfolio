@@ -38,6 +38,7 @@ const blogRoutes = require('./routes/blogs');
 const messageRoutes = require('./routes/messages');
 const mediaRoutes = require('./routes/media');
 const analyticsRoutes = require('./routes/analytics');
+const analyticsTrackRoutes = require('./routes/analytics-track');
 const seoRoutes = require('./routes/seo');
 const settingsRoutes = require('./routes/settings');
 const certificateRoutes = require('./routes/certificates');
@@ -46,6 +47,8 @@ const themeRoutes = require('./routes/theme');
 const backupRoutes = require('./routes/backups');
 const activityLogRoutes = require('./routes/activityLogs');
 const notificationRoutes = require('./routes/notifications');
+const sectionRoutes = require('./routes/sections');
+const websiteRoutes = require('./routes/website');
 const versionRoutes = require('./routes/versions');
 const translationRoutes = require('./routes/translations');
 const securityRoutes = require('./routes/security');
@@ -54,6 +57,11 @@ const accessibilityRoutes = require('./routes/accessibility');
 const searchRoutes = require('./routes/search');
 const userRoutes = require('./routes/users');
 const templateRoutes = require('./routes/templates');
+const navigationRoutes = require('./routes/navigation');
+const timelineRoutes = require('./routes/timeline');
+const systemRoutes = require('./routes/system');
+const integrationsRoutes = require('./routes/integrations');
+const healthDashboardRoutes = require('./routes/healthDashboard');
 
 const fs = require('fs');
 
@@ -103,11 +111,14 @@ app.use('/api/testimonials', testimonialRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/track', analyticsTrackRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/seo', seoRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/certificates', certificateRoutes);
 app.use('/api/pages', pageRoutes);
+app.use('/api/sections', sectionRoutes);
+app.use('/api/website', websiteRoutes);
 app.use('/api/theme', themeRoutes);
 app.use('/api/backups', backupRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
@@ -120,14 +131,18 @@ app.use('/api/accessibility', accessibilityRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/templates', templateRoutes);
-
+app.use('/api/navigation', navigationRoutes);
+app.use('/api/timeline', timelineRoutes);
+app.use('/api/system', systemRoutes);
+app.use('/api/integrations', integrationsRoutes);
+app.use('/api/health-dashboard', healthDashboardRoutes);
 // Sitemap generation
 app.get('/api/sitemap.xml', async (req, res) => {
   try {
     const Page = require('./models/Page');
     const Blog = require('./models/Blog');
     const Project = require('./models/Project');
-    const pages = await Page.find({ isPublished: true }).select('slug updatedAt').lean();
+    const pages = await Page.find({ status: 'published' }).select('slug updatedAt').lean();
     const blogs = await Blog.find({ isActive: true }).select('slug updatedAt').lean();
     const projects = await Project.find({ isActive: true }).select('slug updatedAt').lean();
     const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
@@ -165,8 +180,19 @@ app.get('/', (req, res) => {
   });
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Portfolio API is running', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+  let dbState = 'disconnected';
+  try {
+    const mongoose = require('mongoose');
+    const state = mongoose.connection.readyState;
+    dbState = state === 1 ? 'connected' : state === 2 ? 'connecting' : 'disconnected';
+  } catch {}
+  res.json({
+    success: dbState === 'connected',
+    message: dbState === 'connected' ? 'Portfolio API is running' : 'Database not connected',
+    dbState,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.use((err, req, res, next) => {

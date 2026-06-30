@@ -41,7 +41,7 @@ const Home = () => (
           <span className="hero-cv-text">Curriculum Vitae —</span>
           <a href={googleViewUrl} target="_blank" rel="noopener noreferrer" className="hero-cv-link">View</a>
           <span className="hero-cv-sep">·</span>
-          <a href={cvUrl} download="Sisay_Temesgen_CV.pdf" className="hero-cv-link">Download PDF</a>
+          <a href={cvUrl} download="Sisay_Temesgen_CV.pdf" className="hero-cv-link" data-track="resume-download">Download PDF</a>
         </motion.div>
 
         <motion.div className="hero-stats" {...up(0.5)}>

@@ -1,58 +1,154 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import PageLayout from '../components/PageLayout';
+import { Icons, Icon } from '../lib/icons';
+import { adminApi } from '../services/api';
 
-const STAT_CARDS = [
-  { key: 'totalVisitors', label: 'Total Visitors', icon: 'M17 20v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2 M7 4a4 4 0 100 8 4 4 0 000-8z M23 20v-2a4 4 0 00-3-3.87 M16 4a4 4 0 010 7.75', color: 'primary' },
-  { key: 'onlineVisitors', label: 'Online Now', icon: 'M12 2a10 10 0 1010 10M12 2v4M12 2a10 10 0 00-10 10', color: 'success' },
-  { key: 'totalProjects', label: 'Projects', icon: 'M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z', color: 'warning' },
-  { key: 'totalMessages', label: 'Messages', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', color: 'danger' },
-  { key: 'totalBlogs', label: 'Blog Posts', icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8', color: 'primary' },
-  { key: 'totalSkills', label: 'Skills', icon: 'M16 18l6-6-6-6 M8 6l-6 6 6 6', color: 'success' },
-  { key: 'totalDownloads', label: 'Resume Downloads', icon: 'M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2 M7 11l5 5 5-5 M12 4v12', color: 'warning' },
-  { key: 'storageUsed', label: 'Storage Used', icon: 'M21 15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h8 M15 18l-2-3-2 3 M17 3v6 M20 6h-6', color: 'gray' },
-];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const RECENT_ACTIVITY_TYPES = [
-  { action: 'created', color: 'var(--success)' },
-  { action: 'updated', color: 'var(--primary)' },
-  { action: 'deleted', color: 'var(--danger)' },
-  { action: 'uploaded', color: 'var(--warning)' },
-  { action: 'login', color: 'var(--primary)' },
-  { action: 'logout', color: 'var(--gray-500)' },
-];
+function formatNumber(n) {
+  if (!n && n !== 0) return '0';
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+  return n.toLocaleString();
+}
+
+function formatDuration(sec) {
+  if (!sec || sec <= 0) return '0s';
+  if (sec < 60) return `${sec}s`;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+}
+
+function Widget({ title, icon, children, loading: widgetLoading, error, onRetry }) {
+  return (
+    <div style={{
+      background: 'var(--color-card)', border: '1px solid var(--color-border)',
+      borderRadius: 14, padding: '1.25rem',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text)', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {icon && <Icon path={icon} size={14} style={{ color: 'var(--color-text-tertiary)' }} />}
+          {title}
+        </h3>
+        {error && onRetry && (
+          <button onClick={onRetry} style={{ padding: '2px 6px', borderRadius: 4, border: '1px solid var(--color-danger)', background: 'transparent', color: 'var(--color-danger)', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 600 }}>
+            Retry
+          </button>
+        )}
+      </div>
+      {widgetLoading ? (
+        <div className="skeleton" style={{ height: 80, borderRadius: 8 }} />
+      ) : error ? (
+        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--color-danger)', fontSize: '0.8rem' }}>
+          <Icon path={Icons['alert-circle']} size={16} />
+          <p style={{ margin: '0.5rem 0 0' }}>Failed to load</p>
+        </div>
+      ) : (
+        children
+      )}
+    </div>
+  );
+}
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
-  const [activities, setActivities] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [timeRange, setTimeRange] = useState('week');
+  const [projects, setProjects] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [blogs, setBlogs] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [media, setMedia] = useState([]);
+  const [activity, setActivity] = useState([]);
+  const [liveVisitors, setLiveVisitors] = useState([]);
+  const [liveVisitorsCount, setLiveVisitorsCount] = useState(0);
+  const [todayVisitors, setTodayVisitors] = useState(0);
+  const [weeklyVisitors, setWeeklyVisitors] = useState(0);
+  const [recentVisitors, setRecentVisitors] = useState([]);
+  const [browsers, setBrowsers] = useState([]);
+  const [devices, setDevices] = useState([]);
+  const [sources, setSources] = useState([]);
+  const [topPages, setTopPages] = useState([]);
+  const [avgDuration, setAvgDuration] = useState(0);
+  const [widgetErrors, setWidgetErrors] = useState({});
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [
+        projRes, skillRes, blogRes, msgRes, mediaRes, activityRes,
+        liveRes, visitorsRes, browsersRes, devicesRes, sourcesRes, pagesRes, durationRes,
+      ] = await Promise.all([
+        adminApi.getProjects().catch(() => ({ data: { data: [] } })),
+        adminApi.getSkills().catch(() => ({ data: { data: [] } })),
+        adminApi.getBlogs().catch(() => ({ data: { data: [] } })),
+        adminApi.getMessages({}).catch(() => ({ data: { data: [] } })),
+        adminApi.getMedia({}).catch(() => ({ data: { data: [] } })),
+        adminApi.getRecentActivity().catch(() => ({ data: { data: [] } })),
+        adminApi.getLiveVisitors().catch(() => ({ data: { data: [] } })),
+        adminApi.getVisitorsList({ page: 1, limit: 10, sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => ({ data: { data: { visitors: [] } } })),
+        adminApi.getBrowserStatsNew().catch(() => ({ data: { data: [] } })),
+        adminApi.getDeviceStatsNew().catch(() => ({ data: { data: [] } })),
+        adminApi.getSources().catch(() => ({ data: { data: [] } })),
+        adminApi.getPagesStats().catch(() => ({ data: { data: [] } })),
+        adminApi.getSessionDuration({ range: '30d' }).catch(() => ({ data: { data: { average: 0 } } })),
+      ]);
+
+      setProjects(projRes.data?.data || []);
+      setSkills(skillRes.data?.data || []);
+      setBlogs(blogRes.data?.data || []);
+      setMessages(msgRes.data?.data || []);
+      setMedia(mediaRes.data?.data || []);
+      setActivity(activityRes.data?.data || []);
+
+      const live = liveRes.data?.data || [];
+      setLiveVisitors(Array.isArray(live) ? live : []);
+      setLiveVisitorsCount(Array.isArray(live) ? live.length : 0);
+
+      const vList = visitorsRes.data?.data?.visitors || [];
+      setRecentVisitors(Array.isArray(vList) ? vList.slice(0, 10) : []);
+      setTodayVisitors(vList.filter(v => v.createdAt && new Date(v.createdAt).toDateString() === new Date().toDateString()).length);
+      const weekAgo = new Date(Date.now() - 7 * 86400000);
+      setWeeklyVisitors(vList.filter(v => v.createdAt && new Date(v.createdAt) >= weekAgo).length);
+
+      setBrowsers(browsersRes.data?.data || []);
+      setDevices(devicesRes.data?.data || []);
+      setSources(sourcesRes.data?.data || []);
+      setTopPages(pagesRes.data?.data || []);
+      setAvgDuration(durationRes.data?.data?.average || 0);
+
+      setWidgetErrors({});
+    } catch {
+      setWidgetErrors({ fetch: true });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    Promise.all([
-      api.get('/analytics/dashboard').catch(() => ({ data: {} })),
-      api.get('/activity-logs/recent').catch(() => ({ data: { data: [] } })),
-      api.get('/notifications').catch(() => ({ data: { data: [], unreadCount: 0 } })),
-    ]).then(([statsRes, activityRes, notifRes]) => {
-      setStats(statsRes.data?.data || statsRes.data || {});
-      setActivities(activityRes.data?.data || []);
-      setNotifications(notifRes.data?.data || []);
-    }).finally(() => setLoading(false));
-  }, [timeRange]);
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
-  const formatNumber = (num) => {
-    if (!num && num !== 0) return '0';
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-  };
+  const totalProjects = projects.length;
+  const publishedProjects = projects.filter(p => p.isActive !== false).length;
+  const totalSkills = skills.length;
+  const blogCount = blogs.length;
+  const unreadMessages = messages.filter(m => !m.isRead && !m.read).length;
+  const mediaCount = media.length;
 
-  const getActivityColor = (action) => {
-    const match = RECENT_ACTIVITY_TYPES.find(t => action?.includes(t.action));
-    return match?.color || 'var(--gray-400)';
-  };
+  const stats = [
+    { icon: Icons.folder, label: 'Total Projects', value: totalProjects, color: 'blue' },
+    { icon: Icons['check-circle'], label: 'Published', value: publishedProjects, color: 'green' },
+    { icon: Icons.code, label: 'Skills', value: totalSkills, color: 'purple' },
+    { icon: Icons['file-text'], label: 'Blog Posts', value: blogCount, color: 'blue' },
+    { icon: Icons.mail, label: 'Unread Messages', value: unreadMessages, color: 'red' },
+    { icon: Icons.image, label: 'Media Files', value: mediaCount, color: 'yellow' },
+  ];
 
   const formatTime = (date) => {
+    if (!date) return '';
     const d = new Date(date);
     const now = new Date();
     const diff = now - d;
@@ -62,140 +158,268 @@ export default function Dashboard() {
     return d.toLocaleDateString();
   };
 
-  if (loading) {
-    return (
-      <div>
-        <div className="page-header"><div><h1>Dashboard</h1><p>Welcome to your portfolio CMS</p></div></div>
-        <div className="stat-grid">
-          {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 120, borderRadius: 'var(--radius-xl)' }} />)}
-        </div>
-      </div>
-    );
-  }
+  const navigateTo = (page) => {
+    localStorage.setItem('admin_page', page);
+    window.location.reload();
+  };
+
+  const quickActions = [
+    { label: 'Add Project', icon: Icons.plus, onClick: () => navigateTo('projects'), primary: true },
+    { label: 'Write Blog', icon: Icons['file-plus'], onClick: () => navigateTo('blog') },
+    { label: 'View Site', icon: Icons['external-link'], onClick: () => window.open('/', '_blank') },
+    { label: 'Settings', icon: Icons.settings, onClick: () => navigateTo('settings') },
+  ];
+
+  const browserData = browsers.length > 0 ? browsers.map(b => ({ name: b.name, value: b.value, color: COLORS[browsers.indexOf(b) % COLORS.length] })) : [];
+  const osData = []; // We can add if needed
+  const deviceData = devices.length > 0 ? devices.map(d => ({ name: d.name, value: d.value, color: COLORS[devices.indexOf(d) % COLORS.length] })) : [];
+
+  const quickActionGrid = [
+    { label: 'New Project', icon: Icons.folder, onClick: () => navigateTo('projects'), color: '#2563EB' },
+    { label: 'New Blog Post', icon: Icons['file-plus'], onClick: () => navigateTo('blog'), color: '#16A34A' },
+    { label: 'View Site', icon: Icons['external-link'], onClick: () => window.open('/', '_blank'), color: '#7C3AED' },
+    { label: 'Backup Now', icon: Icons['download-cloud'], onClick: () => navigateTo('backup'), color: '#F59E0B' },
+    { label: 'Clear Cache', icon: Icons['refresh-cw'], onClick: () => fetchData(), color: '#06B6D4' },
+  ];
+
+  const TRAFFIC_SOURCES = sources.length > 0 ? sources : [
+    { source: 'Direct', count: 0, percentage: 0, color: '#2563EB' },
+  ];
 
   return (
-    <div>
-      <div className="dashboard-hero">
-        <div className="dashboard-hero-left">
-          <div className="dashboard-hero-greeting">Dashboard Overview</div>
-          <div className="dashboard-hero-title">Welcome back, <strong>Admin</strong></div>
-          <div className="dashboard-hero-sub">Here's what's happening with your portfolio today.</div>
-        </div>
-        <div className="dashboard-hero-right">
-          <div className="dashboard-hero-stat">
-            <div className="dashboard-hero-stat-value">{formatNumber(stats.onlineVisitors || stats.activeVisitors || 0)}</div>
-            <div className="dashboard-hero-stat-label">Online Now</div>
-          </div>
-          <div className="dashboard-hero-stat-divider" />
-          <div className="dashboard-hero-stat">
-            <div className="dashboard-hero-stat-value">{formatNumber(stats.todayVisitors || 0)}</div>
-            <div className="dashboard-hero-stat-label">Today</div>
-          </div>
-          <div className="dashboard-hero-stat-divider" />
-          <div className="dashboard-hero-stat">
-            <div className="dashboard-hero-stat-value">{notifications.length}</div>
-            <div className="dashboard-hero-stat-label">Notifications</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="stat-grid">
-        {STAT_CARDS.map(card => (
-          <div key={card.key} className="stat-card">
-            <div className="stat-card-top">
-              <div className="stat-card-body">
-                <div className="stat-card-label">{card.label}</div>
-                <div className="stat-card-value">{formatNumber(stats[card.key])}</div>
-              </div>
-              <div className={`stat-card-icon ${card.color}`}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d={card.icon} />
-                </svg>
+    <PageLayout
+      title="Dashboard"
+      description="Welcome to your portfolio CMS. Here's an overview of your content and visitor activity."
+      stats={loading ? undefined : stats}
+      quickActions={quickActions}
+    >
+      {/* Top Row: Live Visitors + Visitors Today + Weekly */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+        <Widget title="Live Visitors" icon={Icons['bar-chart']}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--color-primary-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary)' }}>
+              <Icon path={Icons.users} size={28} />
+            </div>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>{liveVisitorsCount}</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>active visitors now</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--color-success)', marginTop: 2 }}>
+                <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'var(--color-success)', marginRight: 4 }} />
+                Online
               </div>
             </div>
-            {stats[`${card.key}Change`] !== undefined && (
-              <div className="stat-card-footer">
-                <span className={`stat-card-change ${stats[`${card.key}Change`] >= 0 ? 'up' : 'down'}`}>
-                  {stats[`${card.key}Change`] >= 0 ? '+' : ''}{stats[`${card.key}Change`]}%
+          </div>
+          {liveVisitors.length > 0 && (
+            <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {liveVisitors.slice(0, 5).map((v, i) => (
+                <span key={v._id || i} style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: 4, background: 'var(--color-bg-subtle)', color: 'var(--color-text-secondary)' }}>
+                  {v.country || '?'} · {v.browser || '?'}
                 </span>
-                <span className="stat-card-compare">vs last {timeRange}</span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+              ))}
+            </div>
+          )}
+        </Widget>
 
-      <div className="grid-2">
-        <div className="chart-card">
-          <div className="chart-card-header">
-            <h4>Recent Activity</h4>
+        <Widget title="Visitors Today" icon={Icons['user-plus']}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--color-success-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-success)' }}>
+              <Icon path={Icons['bar-chart-3']} size={28} />
+            </div>
+            <div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-text)', lineHeight: 1 }}>{formatNumber(todayVisitors)}</div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>visitors today</div>
+            </div>
           </div>
-          <div className="activity-list">
-            {activities.length === 0 && (
-              <div className="flex items-center justify-center py-8 text-sm" style={{ color: 'var(--text-tertiary)' }}>No recent activity</div>
-            )}
-            {activities.slice(0, 10).map((act, i) => (
-              <div key={act._id || i} className="activity-item">
-                <div className="activity-dot" style={{ background: getActivityColor(act.action) }} />
-                <div className="activity-content">
-                  <div className="activity-text">
-                    <span>{act.action?.replace(/\./g, ' ') || 'Unknown action'}</span>
-                    {act.details?.name && <span> — {act.details.name}</span>}
-                  </div>
-                  <div className="activity-time">{formatTime(act.timestamp || act.createdAt)}</div>
+          <div style={{ marginTop: '0.75rem', display: 'flex', gap: 8, fontSize: '0.7rem', color: 'var(--color-text-tertiary)' }}>
+            <span>This week: {formatNumber(weeklyVisitors)}</span>
+            <span>Avg duration: {formatDuration(avgDuration)}</span>
+          </div>
+        </Widget>
+
+        <Widget title="Traffic Sources" icon={Icons['trending-up']}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {TRAFFIC_SOURCES.slice(0, 5).map((source, i) => (
+              <div key={i}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', marginBottom: 2 }}>
+                  <span style={{ color: 'var(--color-text)' }}>{source.source || source.name}</span>
+                  <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{source.percentage || 0}%</span>
+                </div>
+                <div style={{ height: 4, borderRadius: 2, background: 'var(--color-border-light)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.min(100, source.percentage || 0)}%`, background: COLORS[i % COLORS.length], borderRadius: 2 }} />
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Widget>
+      </div>
 
-        <div className="chart-card">
-          <div className="chart-card-header">
-            <h4>Quick Actions</h4>
-          </div>
-          <div className="flex flex-col gap-3">
-            {[
-              { label: 'Add Project', icon: 'M12 4v16M4 12h16', page: 'projects' },
-              { label: 'View Messages', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16', page: 'messages' },
-              { label: 'Check Analytics', icon: 'M3 20h18M5 16l3-5 4 4 5-8 4 4', page: 'analytics' },
-              { label: 'Update Profile', icon: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 3a4 4 0 100 8 4 4 0 000-8z', page: 'profile' },
-              { label: 'Theme Settings', icon: 'M12 20a8 8 0 100-16 8 8 0 000-16z M12 8a4 4 0 100 8 4 4 0 000-8z', page: 'theme' },
-              { label: 'SEO Settings', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z', page: 'seo' },
-            ].map((action, i) => (
-              <button key={i} className="flex items-center gap-3 p-3 rounded-lg border text-sm font-medium transition-all"
-                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--card)' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={action.icon} /></svg>
+      {/* Charts Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+        <Widget title="Browser Distribution" icon={Icons.monitor}>
+          {browserData.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', padding: '0.5rem 0' }}>
+              {browserData.map((d, i) => (
+                <div key={i} style={{ textAlign: 'center', padding: '0.5rem 0.75rem', borderRadius: 8, background: 'var(--color-bg-subtle)', minWidth: 70 }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: d.color }}>{d.value}%</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--color-text-tertiary)' }}>{d.name}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--color-text-tertiary)', fontSize: '0.82rem' }}>No browser data yet</div>
+          )}
+        </Widget>
+
+        <Widget title="Device Distribution" icon={Icons.smartphone}>
+          {deviceData.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center', padding: '0.5rem 0' }}>
+              {deviceData.map((d, i) => (
+                <div key={i} style={{ textAlign: 'center', padding: '0.5rem 0.75rem', borderRadius: 8, background: 'var(--color-bg-subtle)', minWidth: 70 }}>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: d.color }}>{d.value}%</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--color-text-tertiary)' }}>{d.name}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--color-text-tertiary)', fontSize: '0.82rem' }}>No device data yet</div>
+          )}
+        </Widget>
+      </div>
+
+      {/* Three column row: Top Pages, Recent Visitors, Recent Activity */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+        {/* Top Pages */}
+        <Widget title="Top Pages" icon={Icons['file-text']}>
+          {topPages.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {topPages.slice(0, 5).map((page, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: i < Math.min(4, topPages.length - 1) ? '1px solid var(--color-border-light)' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-text-tertiary)', width: 16, flexShrink: 0 }}>{i + 1}</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{page.path || '/'}</span>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '0.5rem' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text)' }}>{formatNumber(page.views || 0)}</div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>{page.avgTime ? formatDuration(page.avgTime) : ''}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--color-text-tertiary)', fontSize: '0.82rem' }}>No page data yet</div>
+          )}
+        </Widget>
+
+        {/* Recent Visitors */}
+        <Widget title="Recent Visitors" icon={Icons.users}>
+          {recentVisitors.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {recentVisitors.slice(0, 6).map((v, i) => (
+                <div key={v._id || i} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.4rem 0', borderBottom: i < Math.min(5, recentVisitors.length - 1) ? '1px solid var(--color-border-light)' : 'none' }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-primary)',
+                    background: 'var(--color-primary-subtle)',
+                  }}>
+                    {(v.country || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {v.country || 'Unknown'} · {v.browser || '?'}
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)' }}>
+                      {v.landingPage || '/'} · {formatDuration(v.duration || 0)}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    {formatTime(v.createdAt)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--color-text-tertiary)', fontSize: '0.82rem' }}>No visitors yet</div>
+          )}
+        </Widget>
+
+        {/* Recent Activity */}
+        <Widget title="Recent Activity" icon={Icons.clock}>
+          {activity.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {activity.slice(0, 6).map((item, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.4rem 0', borderBottom: i < Math.min(5, activity.length - 1) ? '1px solid var(--color-border-light)' : 'none' }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--color-primary-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--color-primary)', flexShrink: 0 }}>
+                    {item.user?.charAt(0)?.toUpperCase() || 'S'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <strong>{item.user || 'System'}</strong> {item.action || item.message || ''}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{item.time || formatTime(item.timestamp) || ''}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--color-text-tertiary)', fontSize: '0.82rem' }}>No recent activity</div>
+          )}
+        </Widget>
+      </div>
+
+      {/* Bottom Row: Quick Actions */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem' }}>
+        <Widget title="Quick Actions" icon={Icons.settings}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+            {quickActionGrid.map((action) => (
+              <button
+                key={action.label}
+                onClick={action.onClick}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: '0.5rem', padding: '0.85rem 0.5rem',
+                  border: '1px solid var(--color-border)', borderRadius: 10,
+                  background: 'var(--color-bg-subtle)', color: 'var(--color-text-secondary)',
+                  cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.72rem', fontWeight: 600,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = action.color; e.currentTarget.style.background = `${action.color}10`; e.currentTarget.style.color = action.color; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.background = 'var(--color-bg-subtle)'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+              >
+                <div style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${action.color}15`, color: action.color }}>
+                  <Icon path={action.icon} size={18} />
+                </div>
                 {action.label}
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="ml-auto"><polyline points="9 18 15 12 9 6" /></svg>
               </button>
             ))}
           </div>
-        </div>
+        </Widget>
       </div>
 
-      <div className="chart-card mt-6">
-        <div className="chart-card-header">
-          <h4>System Status</h4>
-          <div className="chart-tabs">
-            {['day', 'week', 'month'].map(r => (
-              <button key={r} className={`chart-tab ${timeRange === r ? 'active' : ''}`} onClick={() => setTimeRange(r)}>{r.charAt(0).toUpperCase() + r.slice(1)}</button>
-            ))}
-          </div>
-        </div>
-        <div className="grid grid-cols-4 gap-4">
-          {[
-            { label: 'API Status', value: 'Operational', color: 'var(--success)' },
-            { label: 'Database', value: 'Connected', color: 'var(--success)' },
-            { label: 'Storage', value: `${stats.storageUsed || '0'} MB`, color: 'var(--primary)' },
-            { label: 'Uptime', value: '99.9%', color: 'var(--success)' },
-          ].map((item, i) => (
-            <div key={i} className="p-4 rounded-lg text-center" style={{ background: 'var(--bg)' }}>
-              <div className="text-xs font-medium mb-1" style={{ color: 'var(--text-tertiary)' }}>{item.label}</div>
-              <div className="text-lg font-bold" style={{ color: item.color }}>{item.value}</div>
+      {/* Live Visitors Detail */}
+      {liveVisitors.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem', marginTop: '1.25rem' }}>
+          <Widget title={`Live Visitors (${liveVisitors.length})`} icon={Icons.activity}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {liveVisitors.slice(0, 12).map((v, i) => (
+                <div key={v._id || i} style={{
+                  padding: '0.5rem 0.75rem', borderRadius: 8, background: 'var(--color-bg-subtle)',
+                  border: '1px solid var(--color-border-light)', fontSize: '0.72rem', minWidth: 140,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-success)', display: 'inline-block' }} />
+                    <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{v.country || 'Unknown'}</span>
+                  </div>
+                  <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.65rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {v.currentPage || '/'} · {formatDuration(v.duration || 0)}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </Widget>
         </div>
-      </div>
-    </div>
+      )}
+    </PageLayout>
   );
 }
+
+const COLORS = ['var(--color-primary)', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];

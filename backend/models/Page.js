@@ -39,21 +39,33 @@ const pageComponentSchema = new mongoose.Schema({
   order: { type: Number, default: 0 },
 });
 
-const pageSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  slug: { type: String, required: true, unique: true },
-  description: { type: String, default: '' },
-  isPublished: { type: Boolean, default: true },
-  isHome: { type: Boolean, default: false },
-  order: { type: Number, default: 0 },
-  components: [pageComponentSchema],
+const seoSchema = new mongoose.Schema({
   metaTitle: { type: String, default: '' },
   metaDescription: { type: String, default: '' },
-  metaKeywords: { type: String, default: '' },
+  keywords: { type: String, default: '' },
   ogImage: { type: String, default: '' },
   ogTitle: { type: String, default: '' },
   ogDescription: { type: String, default: '' },
-  canonicalUrl: { type: String, default: '' },
+}, { _id: false });
+
+const pageSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  slug: { type: String, required: true, unique: true },
+  parent: { type: mongoose.Schema.Types.ObjectId, ref: 'Page', default: null },
+  template: { type: String, default: 'blank' },
+  description: { type: String, default: '' },
+  status: { type: String, enum: ['draft', 'published', 'scheduled', 'archived'], default: 'draft' },
+  publishedAt: { type: Date, default: null },
+  scheduledAt: { type: Date, default: null },
+  unpublishAt: { type: Date, default: null },
+  isHome: { type: Boolean, default: false },
+  isProtected: { type: Boolean, default: false },
+  password: { type: String, default: '' },
+  order: { type: Number, default: 0 },
+  components: [pageComponentSchema],
+  sections: [{ type: mongoose.Schema.Types.Mixed }],
+  seo: { type: seoSchema, default: () => ({}) },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 
 pageSchema.pre('save', function (next) {
@@ -71,5 +83,9 @@ pageSchema.pre('save', function (next) {
   }
   next();
 });
+
+pageSchema.index({ slug: 1 });
+pageSchema.index({ parent: 1 });
+pageSchema.index({ status: 1, publishedAt: -1 });
 
 module.exports = mongoose.model('Page', pageSchema);

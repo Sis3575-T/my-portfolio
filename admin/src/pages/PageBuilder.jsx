@@ -1,370 +1,705 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { Icons, Icon } from '../lib/icons';
+import { useToast } from '../components/Toast';
+import ConfirmDialog from '../components/ConfirmDialog';
+import PageLayout from '../components/PageLayout';
+import Toolbar from '../components/Toolbar';
+import SectionEditor from '../components/SectionEditor';
+import { sectionTypes } from '../lib/sectionDefaults';
+import sectionDefaults from '../lib/sectionDefaults';
 
-const SECTION_TYPES = [
-  { id: 'hero', label: 'Hero', icon: 'M21 15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v3 M3 16l5-5 4 4 3-3 6 6' },
-  { id: 'about', label: 'About', icon: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 3a4 4 0 100 8 4 4 0 000-8z' },
-  { id: 'skills', label: 'Skills', icon: 'M16 18l6-6-6-6 M8 6l-6 6 6 6' },
-  { id: 'projects', label: 'Projects', icon: 'M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z' },
-  { id: 'experience', label: 'Experience', icon: 'M12 4v16M4 12h16' },
-  { id: 'education', label: 'Education', icon: 'M22 10l-10-5L2 10l10 5 10-5z M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5' },
-  { id: 'testimonials', label: 'Testimonials', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
-  { id: 'services', label: 'Services', icon: 'M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2' },
-  { id: 'blog', label: 'Blog', icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8' },
-  { id: 'contact', label: 'Contact', icon: 'M4 6h16M4 10h16M4 14h16M4 18h16' },
-  { id: 'stats', label: 'Statistics', icon: 'M3 20h18M5 16l3-5 4 4 5-8 4 4' },
-  { id: 'faq', label: 'FAQ', icon: 'M8 10h8 M8 14h6 M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z' },
-  { id: 'cta', label: 'Call to Action', icon: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M12 18v-6 M9 15h6' },
-  { id: 'gallery', label: 'Gallery', icon: 'M15 8h.01 M4 6h16M4 10h16M4 14h16M4 18h16' },
-  { id: 'timeline', label: 'Timeline', icon: 'M12 8V4m0 4a4 4 0 100 8 4 4 0 000-8z M12 20v-4' },
-  { id: 'certificates', label: 'Certificates', icon: 'M8 21l4-2 4 2-1-4.36L19 12h-5l-2-5-2 5H5l4 4.64L8 21z' },
-  { id: 'footer', label: 'Footer', icon: 'M3 12h18M3 6h18M3 18h18' },
-];
-
-const DEFAULT_COMPONENT_DATA = {
-  hero: { name: '', title: '', introduction: '', avatar: '', socialLinks: [], buttons: [] },
-  about: { biography: '', careerJourney: '', stats: [], keyAchievements: [] },
-  skills: { categories: [] },
-  projects: { title: 'Projects', subtitle: '', items: [] },
-  experience: { title: 'Experience', items: [] },
-  education: { title: 'Education', items: [] },
-  testimonials: { title: 'Testimonials', items: [] },
-  services: { title: 'Services', items: [] },
-  blog: { title: 'Latest Posts', showCount: 3 },
-  contact: { title: 'Get In Touch', email: '', phone: '', address: '' },
-  stats: { items: [{ label: 'Projects', value: '0', suffix: '+' }] },
-  faq: { title: 'FAQ', items: [{ question: '', answer: '' }] },
-  cta: { title: '', description: '', buttonText: '', buttonUrl: '' },
-  gallery: { title: 'Gallery', images: [] },
-  timeline: { title: 'Timeline', items: [{ date: '', title: '', description: '' }] },
-  certificates: { title: 'Certificates', items: [] },
-  footer: { copyright: '', text: '' },
+const defaultPageData = {
+  title: '',
+  slug: '',
+  status: 'draft',
+  template: '',
+  parent: '',
+  publishDate: '',
+  unpublishDate: '',
+  metaTitle: '',
+  metaDescription: '',
+  sections: [],
 };
 
-function Icon({ path, size = 18 }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={path} /></svg>;
-}
-
 export default function PageBuilder() {
+  const toast = useToast();
   const [pages, setPages] = useState([]);
-  const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [selectedSection, setSelectedSection] = useState(null);
   const [activePage, setActivePage] = useState(null);
-  const [message, setMessage] = useState('');
-  const [preview, setPreview] = useState(false);
-  const [history, setHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [form, setForm] = useState({ ...defaultPageData });
+  const [sections, setSections] = useState([]);
+  const [showAddSection, setShowAddSection] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editingSection, setEditingSection] = useState(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showRecycleBin, setShowRecycleBin] = useState(false);
+  const [deletedPages, setDeletedPages] = useState([]);
+  const [versionHistory, setVersionHistory] = useState([]);
+  const [searchVal, setSearchVal] = useState('');
+  const [filterVal, setFilterVal] = useState({ status: '' });
 
-  useEffect(() => { fetchPages(); }, []);
+  useEffect(() => {
+    fetchPages();
+    fetchTemplates();
+  }, []);
 
   const fetchPages = async () => {
+    setLoading(true);
     try {
       const { data } = await api.get('/pages');
-      setPages(data.data || []);
-      if (data.data?.length > 0) { loadPage(data.data[0]); }
-    } catch { setMessage('Failed to load pages'); }
-    finally { setLoading(false); }
+      const pg = data.data || [];
+      setPages(pg);
+      if (pg.length > 0 && !activePage) {
+        selectPage(pg[0]);
+      }
+    } catch {
+      toast.error('Failed to load pages');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const loadPage = async (page) => {
-    setActivePage(page);
-    setSelectedSection(null);
+  const fetchTemplates = async () => {
     try {
-      const { data } = await api.get(`/pages/${page._id}/components`);
+      const { data } = await api.get('/templates?type=page');
+    } catch {}
+  };
+
+  const selectPage = (page) => {
+    setActivePage(page);
+    setForm({
+      title: page.title || '',
+      slug: page.slug || '',
+      status: page.status || 'draft',
+      template: page.template || '',
+      parent: page.parent || '',
+      publishDate: page.publishDate || '',
+      unpublishDate: page.unpublishDate || '',
+      metaTitle: page.metaTitle || '',
+      metaDescription: page.metaDescription || '',
+    });
+    loadSections(page._id);
+    loadVersions(page._id);
+  };
+
+  const loadSections = async (pageId) => {
+    try {
+      const { data } = await api.get(`/pages/${pageId}/components`);
       const comps = data.data || [];
-      setSections(comps.map(c => ({ ...c, id: c._id || generateId() })));
-      pushHistory(comps.map(c => ({ ...c, id: c._id || generateId() })));
+      setSections(comps.map((c, i) => ({
+        id: c._id || `sec_${Date.now()}_${i}`,
+        _id: c._id,
+        type: c.type || 'custom',
+        name: c.name || c.data?.title || c.type || 'Section',
+        visible: c.isVisible !== false,
+        published: c.status === 'published' || c.published !== false,
+        data: c.data || {},
+        styles: c.styles || {},
+        style: c.style || {},
+        content: c.content || {},
+        layout: c.layout || {},
+        media: c.media || {},
+        seo: c.seo || {},
+        animation: c.animation || {},
+        responsive: c.responsive || {},
+        permissions: c.permissions || {},
+        analytics: c.analytics || {},
+        advanced: c.advanced || {},
+        versionHistory: c.versionHistory || [],
+        order: c.order ?? i,
+      })));
     } catch {
       setSections([]);
-      pushHistory([]);
     }
   };
 
-  const generateId = () => `sec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  const pushHistory = (newSections) => {
-    const snapshot = JSON.parse(JSON.stringify(newSections));
-    setHistory(prev => [...prev.slice(0, historyIndex + 1), snapshot]);
-    setHistoryIndex(prev => prev + 1);
-  };
-
-  const undo = () => {
-    if (historyIndex > 0) {
-      setHistoryIndex(prev => prev - 1);
-      setSections(JSON.parse(JSON.stringify(history[historyIndex - 1])));
+  const loadVersions = async (pageId) => {
+    try {
+      const { data } = await api.get(`/pages/${pageId}`);
+      const versions = data.data?.versions || data.versions || [];
+      setVersionHistory(versions);
+    } catch {
+      setVersionHistory([]);
     }
   };
 
-  const redo = () => {
-    if (historyIndex < history.length - 1) {
-      setHistoryIndex(prev => prev + 1);
-      setSections(JSON.parse(JSON.stringify(history[historyIndex + 1])));
+  const generateSlug = (title) =>
+    title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  const handleFormChange = (key, value) => {
+    setForm(prev => ({
+      ...prev,
+      [key]: value,
+      ...(key === 'title' && !activePage ? { slug: generateSlug(value) } : {}),
+    }));
+  };
+
+  const handleSave = async (status) => {
+    if (!form.title.trim()) { toast.error('Title is required'); return; }
+    setSaving(true);
+    try {
+      const pageData = {
+        ...form,
+        slug: form.slug || generateSlug(form.title),
+        status: status || form.status,
+        sections: sections.map((s, i) => ({
+          type: s.type, name: s.name, data: s.data, styles: s.styles,
+          isVisible: s.visible, order: i, status: s.published ? 'published' : 'draft',
+        })),
+      };
+
+      if (activePage) {
+        await api.put(`/pages/${activePage._id}`, pageData);
+        await saveComponents(activePage._id, status);
+        toast.success('Page updated');
+      } else {
+        const { data } = await api.post('/pages', pageData);
+        setActivePage(data.data || data);
+        setPages(prev => [...prev, data.data || data]);
+        await saveComponents(data.data?._id || data._id, status);
+        toast.success('Page created');
+      }
+      await fetchPages();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to save page');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveComponents = async (pageId, status) => {
+    for (let i = 0; i < sections.length; i++) {
+      const s = sections[i];
+      const payload = {
+        type: s.type, name: s.name, data: s.data, styles: s.styles,
+        isVisible: s.visible, order: i,
+        status: status || (s.published ? 'published' : 'draft'),
+      };
+      if (s._id) {
+        await api.put(`/pages/${pageId}/components/${s._id}`, payload);
+      } else {
+        const { data } = await api.post(`/pages/${pageId}/components`, payload);
+        s._id = data.data?._id || data._id;
+      }
     }
   };
 
   const addSection = (type) => {
+    const defaults = sectionDefaults[type] || sectionDefaults.custom;
     const newSection = {
-      id: generateId(),
-      type,
-      isVisible: true,
-      data: JSON.parse(JSON.stringify(DEFAULT_COMPONENT_DATA[type] || {})),
-      styles: {},
+      ...JSON.parse(JSON.stringify(defaults)),
+      id: `sec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       order: sections.length,
     };
-    const updated = [...sections, newSection];
-    setSections(updated);
-    pushHistory(updated);
-    setShowAddMenu(false);
+    setSections(prev => [...prev, newSection]);
+    setShowAddSection(false);
+    toast.success('Section added');
   };
 
   const removeSection = (id) => {
-    const updated = sections.filter(s => s.id !== id);
-    setSections(updated);
-    pushHistory(updated);
-    if (selectedSection?.id === id) setSelectedSection(null);
-  };
-
-  const duplicateSection = (id) => {
-    const source = sections.find(s => s.id === id);
-    if (!source) return;
-    const copy = JSON.parse(JSON.stringify(source));
-    copy.id = generateId();
-    copy.data.title = `${copy.data.title || ''} (Copy)`;
-    const idx = sections.findIndex(s => s.id === id);
-    const updated = [...sections.slice(0, idx + 1), copy, ...sections.slice(idx + 1)];
-    setSections(updated);
-    pushHistory(updated);
-  };
-
-  const toggleVisibility = (id) => {
-    const updated = sections.map(s => s.id === id ? { ...s, isVisible: !s.isVisible } : s);
-    setSections(updated);
-    pushHistory(updated);
+    setSections(prev => prev.filter(s => s.id !== id).map((s, i) => ({ ...s, order: i })));
   };
 
   const moveSection = (id, direction) => {
     const idx = sections.findIndex(s => s.id === id);
     if ((direction === 'up' && idx === 0) || (direction === 'down' && idx === sections.length - 1)) return;
-    const target = direction === 'up' ? idx - 1 : idx + 1;
     const updated = [...sections];
+    const target = direction === 'up' ? idx - 1 : idx + 1;
     [updated[idx], updated[target]] = [updated[target], updated[idx]];
-    setSections(updated);
-    pushHistory(updated);
+    setSections(updated.map((s, i) => ({ ...s, order: i })));
   };
 
-  const updateSectionData = (id, data) => {
-    const updated = sections.map(s => s.id === id ? { ...s, data } : s);
-    setSections(updated);
-    setSelectedSection(prev => prev?.id === id ? { ...prev, data } : prev);
-    pushHistory(updated);
+  const openSectionEditor = (section) => {
+    setEditingSection(section);
+    setEditorOpen(true);
   };
 
-  const updateSectionStyle = (id, styles) => {
-    const updated = sections.map(s => s.id === id ? { ...s, styles: { ...s.styles, ...styles } } : s);
-    setSections(updated);
-    setSelectedSection(prev => prev?.id === id ? { ...prev, styles: { ...prev.styles, ...styles } } : prev);
-    pushHistory(updated);
+  const saveSectionData = (updatedData) => {
+    setSections(prev => prev.map(s => s.id === updatedData.id ? updatedData : s));
+    setEditorOpen(false);
+    setEditingSection(null);
+    toast.success('Section updated');
   };
 
-  const savePage = async () => {
-    setSaving(true); setMessage('');
+  const deletePage = async () => {
+    if (!deleteTarget) return;
     try {
-      const pageData = { sections: sections.map(s => ({
-        type: s.type, data: s.data, styles: s.styles, isVisible: s.isVisible, order: sections.indexOf(s),
-      })) };
-      if (activePage?._id) {
-        await api.put(`/pages/${activePage._id}`, pageData);
-      } else {
-        const { data } = await api.post('/pages', { title: 'Home', slug: 'home', ...pageData });
-        setActivePage(data.data);
+      setDeletedPages(prev => [...prev, deleteTarget]);
+      await api.delete(`/pages/${deleteTarget._id}`);
+      setPages(prev => prev.filter(p => p._id !== deleteTarget._id));
+      if (activePage?._id === deleteTarget._id) {
+        setActivePage(null);
+        setSections([]);
+        setForm({ ...defaultPageData });
       }
-      await saveComponents();
-      setMessage('Page saved successfully!');
-    } catch { setMessage('Failed to save page'); }
-    finally { setSaving(false); }
+      toast.success('Page deleted');
+    } catch {
+      toast.error('Failed to delete page');
+    }
+    setDeleteTarget(null);
   };
 
-  const saveComponents = async () => {
-    if (!activePage?._id) return;
+  const duplicatePage = async (page) => {
     try {
-      await api.put(`/pages/${activePage._id}/components/reorder`, { items: sections.map((s, i) => ({ componentId: s._id, order: i })) });
-    } catch {}
+      await api.post(`/pages/${page._id}/duplicate`);
+      toast.success('Page duplicated');
+      await fetchPages();
+    } catch {
+      toast.error('Failed to duplicate page');
+    }
+  };
+
+  const togglePageStatus = async (page) => {
+    try {
+      const newStatus = page.status === 'published' ? 'draft' : 'published';
+      await api.patch(`/pages/${page._id}/toggle`);
+      setPages(prev => prev.map(p => p._id === page._id ? { ...p, status: newStatus } : p));
+      toast.success(`Page ${newStatus}`);
+    } catch {
+      toast.error('Failed to toggle status');
+    }
+  };
+
+  const movePageInTree = (id, direction) => {
+    const rootPages = pages.filter(p => !p.parent);
+    const idx = rootPages.findIndex(p => p._id === id);
+    if (idx < 0) return;
+    const target = direction === 'up' ? idx - 1 : idx + 1;
+    if (target < 0 || target >= rootPages.length) return;
+    const updated = [...rootPages];
+    [updated[idx], updated[target]] = [updated[target], updated[idx]];
+    api.put('/pages/reorder', { items: updated.map((p, i) => ({ _id: p._id, order: i })) }).catch(() => {});
+    setPages(prev => {
+      const map = new Map(prev.map(p => [p._id, p]));
+      updated.forEach(p => map.set(p._id, p));
+      return [...map.values()];
+    });
   };
 
   const saveAsTemplate = async () => {
     const name = prompt('Template name:');
     if (!name) return;
     try {
-      await api.post('/templates', { name, type: 'page', data: { sections } });
-      setMessage('Template saved!');
-    } catch { setMessage('Failed to save template'); }
+      await api.post('/templates', {
+        name,
+        type: 'page',
+        data: {
+          sections: sections.map(s => ({
+            type: s.type, name: s.name, data: s.data, styles: s.styles,
+            isVisible: s.visible,
+          })),
+        },
+      });
+      toast.success('Template saved');
+    } catch {
+      toast.error('Failed to save template');
+    }
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="spinner" /></div>;
+  const loadFromTemplate = async () => {
+    try {
+      const { data } = await api.get('/templates?type=page');
+      const templates = data.data || [];
+      if (templates.length === 0) { toast.info('No templates available'); return; }
+      const tpl = templates[0];
+      if (tpl.data?.sections) {
+        const imported = tpl.data.sections.map((s, i) => ({
+          ...JSON.parse(JSON.stringify(sectionDefaults[s.type] || sectionDefaults.custom)),
+          ...s,
+          id: `sec_${Date.now()}_${i}`,
+          order: sections.length + i,
+        }));
+        setSections(prev => [...prev, ...imported]);
+        toast.success('Template loaded');
+      }
+    } catch {
+      toast.error('Failed to load template');
+    }
+  };
+
+  const importPages = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const imported = JSON.parse(text);
+        if (Array.isArray(imported)) {
+          for (const p of imported) {
+            await api.post('/pages', p);
+          }
+          toast.success(`${imported.length} pages imported`);
+          await fetchPages();
+        }
+      } catch {
+        toast.error('Import failed');
+      }
+    };
+    input.click();
+  };
+
+  const exportPages = () => {
+    const data = JSON.stringify(pages, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pages-export.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Pages exported');
+  };
+
+  const restoreFromRecycleBin = async (page) => {
+    try {
+      const { data } = await api.post('/pages', {
+        title: page.title,
+        slug: page.slug || generateSlug(page.title),
+        status: 'draft',
+        template: page.template,
+        parent: page.parent,
+      });
+      setDeletedPages(prev => prev.filter(p => p._id !== page._id));
+      setPages(prev => [...prev, data.data || data]);
+      toast.success('Page restored');
+    } catch {
+      toast.error('Failed to restore');
+    }
+  };
+
+  const getPageChildren = (parentId) => pages.filter(p => p.parent === parentId);
+  const rootPages = pages.filter(p => !p.parent);
+
+  const renderPageTree = (pageList, depth = 0) => {
+    return pageList.map(page => {
+      const children = getPageChildren(page._id);
+      const isActive = activePage?._id === page._id;
+      return (
+        <div key={page._id}>
+          <div
+            onClick={() => selectPage(page)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.45rem 0.6rem',
+              paddingLeft: 12 + depth * 20,
+              borderRadius: 6,
+              cursor: 'pointer',
+              background: isActive ? 'var(--color-primary-subtle)' : 'transparent',
+              color: isActive ? 'var(--color-primary)' : 'var(--color-text)',
+              fontSize: '0.82rem',
+              transition: 'background 0.1s',
+              marginBottom: 1,
+            }}
+            onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--color-bg-subtle)'; }}
+            onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+          >
+            <span style={{ cursor: 'grab', color: 'var(--color-text-tertiary)', display: 'flex' }}>
+              <Icon path={Icons.menu} size={12} />
+            </span>
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{page.title || 'Untitled'}</span>
+            <span style={{
+              fontSize: '0.6rem', padding: '0.1rem 0.35rem', borderRadius: 3, fontWeight: 600,
+              background: page.type === 'home' ? 'var(--color-primary-light)' : page.type === 'blog' ? 'var(--color-success-light)' : 'var(--color-bg-subtle)',
+              color: page.type === 'home' ? 'var(--color-primary)' : page.type === 'blog' ? 'var(--color-success)' : 'var(--color-text-tertiary)',
+            }}>
+              {page.type === 'home' ? 'Home' : page.type === 'blog' ? 'Blog' : 'Page'}
+            </span>
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+              background: page.status === 'published' ? 'var(--color-success)' : page.status === 'scheduled' ? 'var(--color-warning)' : 'var(--color-text-tertiary)',
+            }} />
+          </div>
+          {children.length > 0 && renderPageTree(children, depth + 1)}
+        </div>
+      );
+    });
+  };
+
+  const stats = [
+    { label: 'Total Pages', value: pages.length, icon: Icons.file, color: 'blue' },
+    { label: 'Published', value: pages.filter(p => p.status === 'published').length, icon: Icons.check, color: 'green' },
+    { label: 'Drafts', value: pages.filter(p => p.status === 'draft').length, icon: Icons.edit, color: 'yellow' },
+    { label: 'Scheduled', value: pages.filter(p => p.status === 'scheduled').length, icon: Icons.clock, color: 'purple' },
+  ];
+
+  const filteredPages = pages.filter(p => {
+    const q = searchVal.toLowerCase();
+    if (q && !p.title?.toLowerCase().includes(q)) return false;
+    if (filterVal.status && p.status !== filterVal.status) return false;
+    return true;
+  });
+
+  if (loading) {
+    return (
+      <PageLayout title="Page Builder" description="Manage pages and sections">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400, color: 'var(--color-text-tertiary)' }}>Loading...</div>
+      </PageLayout>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)]">
-      <div className="page-header">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Page Builder</h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Drag, edit and arrange sections on your page</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="btn btn-ghost btn-sm" onClick={undo} disabled={historyIndex <= 0}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" /></svg> Undo
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={redo} disabled={historyIndex >= history.length - 1}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" /></svg> Redo
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setPreview(!preview)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z" /></svg> {preview ? 'Edit' : 'Preview'}
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={saveAsTemplate}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8" /></svg> Template
-          </button>
-          <button className="btn btn-primary" onClick={savePage} disabled={saving}>{saving ? 'Saving...' : 'Publish'}</button>
-        </div>
-      </div>
+    <PageLayout title="Page Builder" description="Create, edit, and manage pages" stats={stats}>
+      <Toolbar
+        searchValue={searchVal}
+        onSearchChange={setSearchVal}
+        searchPlaceholder="Search pages..."
+        filters={[{ key: 'status', label: 'Status', type: 'select', options: ['published', 'draft', 'scheduled'] }]}
+        filterValues={filterVal}
+        onFilterChange={(key, val) => {
+          if (val === '__reset__' || key === '__reset__') setFilterVal({ status: '' });
+          else setFilterVal({ ...filterVal, [key]: val });
+        }}
+        onAddNew={() => {
+          setActivePage(null);
+          setForm({ ...defaultPageData });
+          setSections([]);
+          setVersionHistory([]);
+        }}
+        extraActions={[
+          { label: 'Templates', icon: Icons['file-text'], onClick: () => setShowTemplates(true) },
+          { label: 'Import', icon: Icons.upload, onClick: importPages },
+          { label: 'Export', icon: Icons.download, onClick: exportPages },
+          { label: 'Recycle Bin', icon: Icons.trash2, onClick: () => setShowRecycleBin(true) },
+        ]}
+      />
 
-      {message && (
-        <div className="mb-4 px-4 py-2.5 rounded-lg text-sm font-medium"
-          style={{ background: message.includes('Failed') ? 'var(--danger-subtle)' : 'var(--success-subtle)', color: message.includes('Failed') ? 'var(--danger)' : 'var(--success)' }}>
-          {message}
+      <div style={{ display: 'flex', gap: '1rem', height: 'calc(100vh - 260px)', minHeight: 500 }}>
+        <div style={{ width: 300, flexShrink: 0, background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--color-border)', fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Pages ({filteredPages.length})</span>
+            <button className="btn btn-ghost btn-xs" onClick={() => {
+              setActivePage(null);
+              setForm({ ...defaultPageData });
+              setSections([]);
+            }}>
+              <Icon path={Icons.plus} size={12} /> New
+            </button>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem' }}>
+            {filteredPages.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--color-text-tertiary)', fontSize: '0.82rem' }}>No pages</div>
+            ) : renderPageTree(filteredPages.filter(p => !p.parent))}
+          </div>
         </div>
-      )}
 
-      <div className="flex-1 flex gap-6 overflow-hidden">
-        <div className="flex-1 overflow-y-auto rounded-xl border p-4" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-          {sections.length === 0 && !preview && (
-            <div className="flex flex-col items-center justify-center h-64 text-center" style={{ color: 'var(--text-tertiary)' }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mb-4" style={{ color: 'var(--gray-300)' }}>
-                <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" />
-              </svg>
-              <h3 className="text-base font-semibold" style={{ color: 'var(--text-secondary)' }}>No sections yet</h3>
-              <p className="text-sm mt-1 mb-4">Click Add Section to start building your page</p>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'auto' }}>
+          <div style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 14, padding: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                {activePage ? `Edit: ${activePage.title}` : 'Create New Page'}
+              </h3>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {activePage && (
+                  <>
+                    <button className="btn btn-ghost btn-sm" onClick={() => togglePageStatus(activePage)}>
+                      <Icon path={activePage.status === 'published' ? Icons['eye-off'] : Icons.eye} size={13} />
+                      {activePage.status === 'published' ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => duplicatePage(activePage)}>
+                      <Icon path={Icons.copy} size={13} /> Duplicate
+                    </button>
+                    <button className="btn btn-danger btn-sm" onClick={() => setDeleteTarget(activePage)}>
+                      <Icon path={Icons.trash2} size={13} /> Delete
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-          )}
-          {preview ? (
-            <div className="space-y-6 p-4" style={{ background: 'var(--bg)' }}>
-              {sections.filter(s => s.isVisible !== false).map(section => (
-                <div key={section.id} className="rounded-xl border p-8 text-center" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-                  <div className="text-lg font-bold mb-2" style={{ color: 'var(--text)' }}>{section.type.charAt(0).toUpperCase() + section.type.slice(1)} Section</div>
-                  <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{section.data?.title || section.data?.name || `#${section.type}`}</p>
-                </div>
-              ))}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-group">
+                <label>Page Title <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                <input value={form.title} onChange={e => handleFormChange('title', e.target.value)} placeholder="Home, About, Contact..." />
+              </div>
+              <div className="form-group">
+                <label>Slug</label>
+                <input value={form.slug} onChange={e => handleFormChange('slug', e.target.value)} placeholder="about-us" />
+              </div>
+              <div className="form-group">
+                <label>Status</label>
+                <select value={form.status} onChange={e => handleFormChange('status', e.target.value)}>
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="scheduled">Scheduled</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Parent Page</label>
+                <select value={form.parent} onChange={e => handleFormChange('parent', e.target.value)}>
+                  <option value="">None (Top Level)</option>
+                  {pages.filter(p => p._id !== activePage?._id).map(p => (
+                    <option key={p._id} value={p._id}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Template</label>
+                <select value={form.template} onChange={e => handleFormChange('template', e.target.value)}>
+                  <option value="">None</option>
+                  <option value="default">Default</option>
+                  <option value="fullwidth">Full Width</option>
+                  <option value="landing">Landing</option>
+                </select>
+              </div>
+              <div className="form-group" />
             </div>
-          ) : (
-            <div className="space-y-3">
-              {sections.map((section, idx) => (
-                <div key={section.id}
-                  className={`flex items-center gap-3 p-3.5 rounded-lg border cursor-pointer transition-all ${selectedSection?.id === section.id ? 'ring-2' : ''}`}
-                  style={{ background: selectedSection?.id === section.id ? 'var(--primary-subtle)' : 'var(--card)', borderColor: selectedSection?.id === section.id ? 'var(--primary)' : 'var(--border)', ringColor: 'var(--primary)' }}
-                  onClick={() => setSelectedSection(section)}>
-                  <div className="flex flex-col gap-0.5">
-                    <button className="btn-icon btn-xs" onClick={(e) => { e.stopPropagation(); moveSection(section.id, 'up'); }} disabled={idx === 0}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="18 15 12 9 6 15" /></svg>
-                    </button>
-                    <button className="btn-icon btn-xs" onClick={(e) => { e.stopPropagation(); moveSection(section.id, 'down'); }} disabled={idx === sections.length - 1}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
-                    </button>
-                  </div>
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: 'var(--bg)', color: 'var(--text-secondary)' }}>
-                    {section.type.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{section.type.charAt(0).toUpperCase() + section.type.slice(1)}</div>
-                    <div className="text-xs truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>{section.data?.name || section.data?.title || section.data?.heading || `#${section.type}`}</div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className={`w-2 h-2 rounded-full ${section.isVisible !== false ? 'bg-green-500' : 'bg-gray-300'}`} />
-                    <button className="btn-icon btn-xs" onClick={(e) => { e.stopPropagation(); toggleVisibility(section.id); }} title="Toggle visibility">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        {section.isVisible !== false
-                          ? <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z M12 9a3 3 0 100 6 3 3 0 000-6z" /></>
-                          : <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94 M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19 M14.12 14.12a3 3 0 11-4.24-4.24 M1 1l22 22" /></>}
-                      </svg>
-                    </button>
-                    <button className="btn-icon btn-xs" onClick={(e) => { e.stopPropagation(); duplicateSection(section.id); }} title="Duplicate">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
-                    </button>
-                    <button className="btn-icon btn-xs" onClick={(e) => { e.stopPropagation(); removeSection(section.id); }} title="Delete">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
-                    </button>
-                  </div>
+
+            {form.status === 'scheduled' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.75rem' }}>
+                <div className="form-group">
+                  <label>Publish Date</label>
+                  <input type="datetime-local" value={form.publishDate} onChange={e => handleFormChange('publishDate', e.target.value)} />
                 </div>
-              ))}
-              <button onClick={() => setShowAddMenu(true)}
-                className="w-full py-4 rounded-xl border-2 border-dashed text-sm font-medium transition-all"
-                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg)' }}>
-                + Add Section
+                <div className="form-group">
+                  <label>Unpublish Date</label>
+                  <input type="datetime-local" value={form.unpublishDate} onChange={e => handleFormChange('unpublishDate', e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, marginTop: '1rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => handleSave('draft')} disabled={saving}>
+                <Icon path={Icons.save} size={14} /> Save Draft
+              </button>
+              <button className="btn btn-primary" onClick={() => handleSave('published')} disabled={saving}>
+                {saving ? 'Saving...' : <><Icon path={Icons['external-link']} size={14} /> Publish</>}
               </button>
             </div>
-          )}
-        </div>
+          </div>
 
-        {selectedSection && !preview && (
-          <div className="w-80 overflow-y-auto rounded-xl border p-4 flex-shrink-0" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold" style={{ color: 'var(--text)' }}>Edit {selectedSection.type.charAt(0).toUpperCase() + selectedSection.type.slice(1)}</h3>
-              <button className="btn-icon btn-sm" onClick={() => setSelectedSection(null)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          <div style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 14, padding: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                Sections ({sections.length})
+              </h3>
+              <button className="btn btn-primary btn-sm" onClick={() => setShowAddSection(true)}>
+                <Icon path={Icons.plus} size={13} /> Add Section
               </button>
             </div>
-            <div className="space-y-4">
-              {Object.entries(selectedSection.data || {}).map(([key, val]) => (
-                <div key={key} className="form-group">
-                  <label className="text-xs capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
-                  {Array.isArray(val) ? (
-                    <div className="text-xs p-2 rounded" style={{ background: 'var(--bg)', color: 'var(--text-secondary)' }}>
-                      {val.length} items
+
+            {sections.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-tertiary)', fontSize: '0.85rem' }}>
+                No sections yet. Click "Add Section" to start building.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {sections.map((section, idx) => {
+                  const typeInfo = sectionTypes.find(t => t.id === section.type);
+                  return (
+                    <div key={section.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: 8,
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-bg)',
+                    }}>
+                      <span style={{ cursor: 'grab', color: 'var(--color-text-tertiary)', display: 'flex' }}>
+                        <Icon path={Icons.menu} size={14} />
+                      </span>
+                      <div style={{ width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary-subtle)', color: 'var(--color-primary)', flexShrink: 0 }}>
+                        {typeInfo ? <Icon path={typeInfo.icon} size={14} /> : <Icon path={Icons.grid} size={14} />}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>{section.name || section.type}</div>
+                        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-tertiary)', textTransform: 'capitalize' }}>{section.type}</div>
+                      </div>
+                      <span style={{
+                        width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                        background: section.visible !== false ? 'var(--color-success)' : 'var(--color-text-tertiary)',
+                      }} />
+                      <div style={{ display: 'flex', gap: 2 }}>
+                        <button onClick={() => moveSection(section.id, 'up')} disabled={idx === 0} style={{ padding: 4, borderRadius: 4, border: 'none', background: 'transparent', cursor: idx === 0 ? 'default' : 'pointer', color: idx === 0 ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)', opacity: idx === 0 ? 0.3 : 1 }}>
+                          <Icon path={Icons['chevron-up']} size={12} />
+                        </button>
+                        <button onClick={() => moveSection(section.id, 'down')} disabled={idx === sections.length - 1} style={{ padding: 4, borderRadius: 4, border: 'none', background: 'transparent', cursor: idx === sections.length - 1 ? 'default' : 'pointer', color: idx === sections.length - 1 ? 'var(--color-text-tertiary)' : 'var(--color-text-secondary)', opacity: idx === sections.length - 1 ? 0.3 : 1 }}>
+                          <Icon path={Icons['chevron-down']} size={12} />
+                        </button>
+                        <button onClick={() => openSectionEditor(section)} style={{ padding: 4, borderRadius: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
+                          <Icon path={Icons.edit} size={12} />
+                        </button>
+                        <button onClick={() => removeSection(section.id)} style={{ padding: 4, borderRadius: 4, border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-danger)' }}>
+                          <Icon path={Icons.trash2} size={12} />
+                        </button>
+                      </div>
                     </div>
-                  ) : typeof val === 'object' && val !== null ? (
-                    <div className="text-xs p-2 rounded" style={{ background: 'var(--bg)', color: 'var(--text-secondary)' }}>
-                      {Object.keys(val).join(', ')}
-                    </div>
-                  ) : (
-                    <input value={val || ''} onChange={(e) => updateSectionData(selectedSection.id, { ...selectedSection.data, [key]: e.target.value })}
-                      placeholder={key} />
-                  )}
-                </div>
-              ))}
-              <div className="border-t pt-4" style={{ borderColor: 'var(--border)' }}>
-                <label className="text-xs font-semibold block mb-2" style={{ color: 'var(--text)' }}>Section Styles</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs block mb-1">Background</label><input type="color" value={selectedSection.styles?.background || '#ffffff'} onChange={(e) => updateSectionStyle(selectedSection.id, { background: e.target.value })} className="w-full h-8 rounded cursor-pointer" /></div>
-                  <div><label className="text-xs block mb-1">Text Color</label><input type="color" value={selectedSection.styles?.color || '#000000'} onChange={(e) => updateSectionStyle(selectedSection.id, { color: e.target.value })} className="w-full h-8 rounded cursor-pointer" /></div>
-                </div>
-                <div className="mt-3">
-                  <label className="text-xs block mb-1">Padding</label>
-                  <input value={selectedSection.styles?.padding || ''} onChange={(e) => updateSectionStyle(selectedSection.id, { padding: e.target.value })} placeholder="24px" className="w-full px-2.5 py-1.5 text-xs rounded-md border" style={{ borderColor: 'var(--border)', background: 'var(--bg)' }} />
-                </div>
-                <div className="mt-3">
-                  <label className="text-xs block mb-1">Max Width</label>
-                  <input value={selectedSection.styles?.maxWidth || ''} onChange={(e) => updateSectionStyle(selectedSection.id, { maxWidth: e.target.value })} placeholder="1200px" className="w-full px-2.5 py-1.5 text-xs rounded-md border" style={{ borderColor: 'var(--border)', background: 'var(--bg)' }} />
-                </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 14, padding: '1.25rem' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)', margin: '0 0 1rem' }}>SEO Settings</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label>Meta Title</label>
+                <input value={form.metaTitle} onChange={e => handleFormChange('metaTitle', e.target.value)} placeholder="Page title for SEO" />
+              </div>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label>Meta Description</label>
+                <textarea value={form.metaDescription} onChange={e => handleFormChange('metaDescription', e.target.value)} placeholder="Brief description for search engines" rows={3} />
               </div>
             </div>
           </div>
-        )}
+
+          {versionHistory.length > 0 && (
+            <div style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 14, padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-text)', margin: '0 0 1rem' }}>Version History</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[...versionHistory].reverse().map((v, i) => (
+                  <div key={v._id || i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-bg-subtle)' }}>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>Version {versionHistory.length - i}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--color-text-tertiary)' }}>{v.createdAt ? new Date(v.createdAt).toLocaleString() : ''}</div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.post(`/backups/${v._id || v.id}/restore`);
+                          toast.success('Version restored');
+                          if (activePage) loadSections(activePage._id);
+                        } catch { toast.error('Restore failed'); }
+                      }}
+                      style={{ padding: '0.3rem 0.6rem', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-bg)', cursor: 'pointer', color: 'var(--color-text-secondary)', fontSize: '0.75rem' }}
+                    >
+                      Restore
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {showAddMenu && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={() => setShowAddMenu(false)}>
-          <div className="rounded-2xl p-6 max-w-2xl w-full max-h-[70vh] overflow-y-auto" style={{ background: 'var(--card)' }} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold" style={{ color: 'var(--text)' }}>Add Section</h3>
-              <button className="modal-close" onClick={() => setShowAddMenu(false)}>&times;</button>
+      {showAddSection && (
+        <div className="modal-overlay" onClick={() => setShowAddSection(false)} style={{ zIndex: 100 }}>
+          <div className="modal modal-lg" onClick={e => e.stopPropagation()} style={{ maxWidth: 650, maxHeight: '75vh' }}>
+            <div className="modal-header">
+              <h3>Add Section to Page</h3>
+              <button className="modal-close" onClick={() => setShowAddSection(false)}>&times;</button>
             </div>
-            <div className="grid grid-cols-4 gap-3">
-              {SECTION_TYPES.map(type => (
-                <button key={type.id} onClick={() => addSection(type.id)}
-                  className="flex flex-col items-center gap-2 p-4 rounded-xl border text-sm font-medium transition-all hover:shadow-sm"
-                  style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)', background: 'var(--bg)' }}>
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'var(--primary-subtle)', color: 'var(--primary)' }}>
-                    <Icon path={type.icon} size={20} />
+            <div style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10, overflowY: 'auto', maxHeight: '55vh' }}>
+              {sectionTypes.map(type => (
+                <button
+                  key={type.id}
+                  onClick={() => addSection(type.id)}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '0.75rem', borderRadius: 10, border: '1px solid var(--color-border)', background: 'var(--color-bg)', cursor: 'pointer', color: 'var(--color-text-secondary)', fontSize: '0.78rem', fontWeight: 500, transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.background = 'var(--color-primary-subtle)'; e.currentTarget.style.color = 'var(--color-primary)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.background = 'var(--color-bg)'; e.currentTarget.style.color = 'var(--color-text-secondary)'; }}
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary-subtle)', color: 'var(--color-primary)' }}>
+                    <Icon path={type.icon} size={18} />
                   </div>
                   {type.label}
                 </button>
@@ -373,6 +708,62 @@ export default function PageBuilder() {
           </div>
         </div>
       )}
-    </div>
+
+      {showTemplates && (
+        <div className="modal-overlay" onClick={() => setShowTemplates(false)} style={{ zIndex: 100 }}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <h3>Templates</h3>
+              <button className="modal-close" onClick={() => setShowTemplates(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <button className="btn btn-primary" onClick={() => { saveAsTemplate(); setShowTemplates(false); }} style={{ width: '100%', marginBottom: 8 }}>Save as Template</button>
+              <button className="btn btn-outline" onClick={() => { loadFromTemplate(); setShowTemplates(false); }} style={{ width: '100%' }}>Load from Template</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRecycleBin && (
+        <div className="modal-overlay" onClick={() => setShowRecycleBin(false)} style={{ zIndex: 100 }}>
+          <div className="modal modal-lg" onClick={e => e.stopPropagation()} style={{ maxWidth: 550, maxHeight: '70vh' }}>
+            <div className="modal-header">
+              <h3>Recycle Bin ({deletedPages.length})</h3>
+              <button className="modal-close" onClick={() => setShowRecycleBin(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              {deletedPages.length === 0 ? (
+                <p style={{ textAlign: 'center', color: 'var(--color-text-tertiary)', fontSize: '0.85rem' }}>Recycle bin is empty</p>
+              ) : (
+                deletedPages.map(page => (
+                  <div key={page._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', borderRadius: 8, border: '1px solid var(--color-border)', marginBottom: 6 }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>{page.title || 'Untitled'}</span>
+                    <button className="btn btn-ghost btn-sm" onClick={() => restoreFromRecycleBin(page)}>Restore</button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SectionEditor
+        section={editingSection}
+        open={editorOpen}
+        onClose={() => { setEditorOpen(false); setEditingSection(null); }}
+        onSave={saveSectionData}
+        onPreview={() => toast.info('Preview')}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={deletePage}
+        title="Delete Page"
+        message={`Are you sure you want to delete "${deleteTarget?.title}"? This cannot be undone.`}
+        confirmText="Delete"
+        type="danger"
+      />
+    </PageLayout>
   );
 }

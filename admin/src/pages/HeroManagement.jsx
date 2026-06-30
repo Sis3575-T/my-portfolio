@@ -1,78 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { adminApi, imageUrl } from '../services/api';
+import { Icons, Icon } from '../lib/icons';
+import { useToast } from '../components/Toast';
+import PageLayout from '../components/PageLayout';
 
-function HeroManagement() {
-  const [heroes, setHeroes] = useState([]);
+export default function HeroManagement() {
+  const toast = useToast();
+  const [hero, setHero] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState(null);
+  const avatarInputRef = useRef(null);
+  const bgInputRef = useRef(null);
   const [form, setForm] = useState({
-    name: '', title: '', introduction: '',
+    name: '', title: '', shortBio: '',
     avatar: '', avatarFile: null,
-    socialLinks: [{ platform: 'GitHub', url: '' }],
-    buttons: [{ label: '', url: '', type: 'primary' }],
+    backgroundImage: '', backgroundFile: null,
+    socialLinks: [{ platform: '', url: '' }],
+    ctaButtons: [{ label: '', url: '' }],
   });
 
-  useEffect(() => {
-    fetchHeroes();
-  }, []);
+  useEffect(() => { fetchHero(); }, []);
 
-  const fetchHeroes = async () => {
+  const fetchHero = async () => {
+    setLoading(true);
     try {
       const { data } = await adminApi.getHero();
-      setHeroes(data.data || []);
-    } catch (err) {
-      console.error('Failed to load hero');
+      const h = data.data || data || {};
+      setHero(h);
+      setForm({
+        name: h.name || '',
+        title: h.title || '',
+        shortBio: h.shortBio || h.introduction || '',
+        avatar: h.avatar || '',
+        avatarFile: null,
+        backgroundImage: h.backgroundImage || '',
+        backgroundFile: null,
+        socialLinks: (h.socialLinks || []).length > 0 ? h.socialLinks : [{ platform: '', url: '' }],
+        ctaButtons: (h.ctaButtons || h.buttons || []).length > 0 ? (h.ctaButtons || h.buttons || []) : [{ label: '', url: '' }],
+      });
+    } catch {
+      toast.error('Failed to load hero');
     } finally {
       setLoading(false);
     }
   };
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm({ name: '', title: '', introduction: '', avatar: '', avatarFile: null, socialLinks: [{ platform: 'GitHub', url: '' }], buttons: [{ label: '', url: '', type: 'primary' }] });
-    setShowModal(true);
-  };
-
-  const openEdit = (hero) => {
-    setEditing(hero);
-    setForm({
-      name: hero.name || '',
-      title: hero.title || '',
-      introduction: hero.introduction || '',
-      avatar: hero.avatar || '',
-      avatarFile: null,
-      socialLinks: (hero.socialLinks || []).length > 0 ? hero.socialLinks : [{ platform: 'GitHub', url: '' }],
-      buttons: (hero.buttons || []).length > 0 ? hero.buttons : [{ label: '', url: '', type: 'primary' }],
-    });
-    setShowModal(true);
-  };
-
   const handleSave = async () => {
+    if (!form.name.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
-    setMessage('');
     try {
       const fd = new FormData();
       fd.append('name', form.name);
       fd.append('title', form.title);
-      fd.append('introduction', form.introduction);
+      fd.append('shortBio', form.shortBio);
       fd.append('socialLinks', JSON.stringify(form.socialLinks.filter(s => s.platform || s.url)));
-      fd.append('buttons', JSON.stringify(form.buttons.filter(b => b.label)));
-      if (form.avatarFile) {
-        fd.append('avatar', form.avatarFile);
-      }
-      if (editing) {
-        await adminApi.updateHero(editing._id, fd);
-      } else {
-        await adminApi.createHero(fd);
-      }
-      await fetchHeroes();
-      setShowModal(false);
-      setMessage('Saved successfully');
-    } catch (err) {
-      setMessage('Failed to save');
+      fd.append('ctaButtons', JSON.stringify(form.ctaButtons.filter(b => b.label)));
+      if (form.avatarFile) fd.append('avatar', form.avatarFile);
+      if (form.backgroundFile) fd.append('backgroundImage', form.backgroundFile);
+      await adminApi.updateHero(fd);
+      toast.success('Hero updated successfully');
+      await fetchHero();
+    } catch {
+      toast.error('Failed to save hero');
     } finally {
       setSaving(false);
     }
@@ -86,131 +75,157 @@ function HeroManagement() {
     setForm({ ...form, socialLinks: copy });
   };
 
-  const addButton = () => setForm({ ...form, buttons: [...form.buttons, { label: '', url: '', type: 'primary' }] });
-  const removeButton = (i) => setForm({ ...form, buttons: form.buttons.filter((_, idx) => idx !== i) });
-  const updateButton = (i, field, value) => {
-    const copy = [...form.buttons];
+  const addCta = () => setForm({ ...form, ctaButtons: [...form.ctaButtons, { label: '', url: '' }] });
+  const removeCta = (i) => setForm({ ...form, ctaButtons: form.ctaButtons.filter((_, idx) => idx !== i) });
+  const updateCta = (i, field, value) => {
+    const copy = [...form.ctaButtons];
     copy[i] = { ...copy[i], [field]: value };
-    setForm({ ...form, buttons: copy });
+    setForm({ ...form, ctaButtons: copy });
   };
 
-  if (loading) return <div className="placeholder-page"><p>Loading...</p></div>;
+  const handleAvatarChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setForm({ ...form, avatarFile: file, avatar: URL.createObjectURL(file) });
+  };
+
+  const handleBgChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) setForm({ ...form, backgroundFile: file, backgroundImage: URL.createObjectURL(file) });
+  };
+
+  const stats = [
+    { label: 'Current Hero', value: hero ? 'Active' : 'None', icon: Icons.user, color: 'blue' },
+    { label: 'Media Count', value: (hero?.avatar ? 1 : 0) + (hero?.backgroundImage ? 1 : 0), icon: Icons.image, color: 'green' },
+  ];
+
+  if (loading) {
+    return (
+      <PageLayout title="Hero Management" description="Manage your hero section" stats={stats}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {[1,2,3].map(i => (
+            <div key={i} className="skeleton" style={{ width: '100%', height: 48, borderRadius: 8, background: 'linear-gradient(90deg, var(--color-gray-100) 25%, var(--color-gray-200) 50%, var(--color-gray-100) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite' }} />
+          ))}
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
-    <div>
-      <div className="table-header">
-        <span style={{ fontSize: 14, fontWeight: 500 }}>{heroes.length} hero sections</span>
-        <button className="btn btn-primary" onClick={openCreate}><i className="fa-regular fa-plus"></i> Add Hero</button>
-      </div>
-
-      {message && <div style={{ padding: '8px 12px', marginBottom: 12, background: message.includes('Failed') ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)', borderRadius: 6, fontSize: 13 }}>{message}</div>}
-
-      <table className="data-table">
-        <thead><tr><th>Name</th><th>Title</th><th>Status</th><th></th></tr></thead>
-        <tbody>
-          {heroes.map(h => (
-            <tr key={h._id}>
-              <td style={{ fontWeight: 500 }}>{h.name}</td>
-              <td>{h.title}</td>
-              <td><span className={`status ${h.isActive ? 'published' : 'draft'}`}>{h.isActive ? 'Active' : 'Hidden'}</span></td>
-              <td>
-                <div className="table-actions">
-                  <button className="edit" onClick={() => openEdit(h)} title="Edit"><i className="fa-regular fa-pen"></i></button>
-                </div>
-              </td>
-            </tr>
-          ))}
-          {heroes.length === 0 && <tr><td colSpan={4} style={{ textAlign: 'center', padding: 32, color: 'var(--gray-400)' }}>No hero sections yet</td></tr>}
-        </tbody>
-      </table>
-
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editing ? 'Edit Hero' : 'Add Hero'}</h3>
-              <button className="modal-close" onClick={() => setShowModal(false)}>&times;</button>
+    <PageLayout
+      title="Hero Management"
+      description="Manage your hero section content"
+      stats={stats}
+      breadcrumbs={[{ label: 'Pages' }, { label: 'Hero' }]}
+      quickActions={[
+        { label: saving ? 'Saving...' : 'Save Changes', icon: Icons.save, onClick: handleSave, primary: true },
+        { label: 'Refresh', icon: Icons['refresh-cw'], onClick: fetchHero },
+      ]}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ padding: '1.5rem', borderRadius: 14, border: '1px solid var(--color-border)', background: 'var(--color-card)' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: '0 0 1rem' }}>Avatar Image</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div
+              style={{ width: 100, height: 100, borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--color-border)', background: 'var(--color-bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+              onClick={() => avatarInputRef.current?.click()}
+            >
+              {form.avatar ? (
+                <img src={form.avatarFile ? form.avatar : imageUrl(form.avatar)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <Icon path={Icons.user} size={36} style={{ color: 'var(--color-text-tertiary)' }} />
+              )}
             </div>
-            <div className="modal-body">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Name</label>
-                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label>Title</label>
-                  <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Introduction</label>
-                <textarea rows={3} value={form.introduction} onChange={(e) => setForm({ ...form, introduction: e.target.value })} />
-              </div>
-
-              <div className="form-group">
-                <label>Profile Photo</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {form.avatar && !form.avatarFile && (
-                    <img
-                      src={imageUrl(form.avatar)}
-                      alt="Current"
-                      style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color)' }}
-                    />
-                  )}
-                  {form.avatarFile && (
-                    <img
-                      src={URL.createObjectURL(form.avatarFile)}
-                      alt="Preview"
-                      style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--accent-color)' }}
-                    />
-                  )}
-                  <input type="file" accept="image/*" onChange={e => setForm({ ...form, avatarFile: e.target.files[0] })} />
-                </div>
-              </div>
-
-              <div className="form-section-title">Social Links</div>
-              {form.socialLinks.map((s, i) => (
-                <div key={i} className="form-row" style={{ alignItems: 'center' }}>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <input value={s.platform} onChange={(e) => updateSocial(i, 'platform', e.target.value)} placeholder="Platform (GitHub, LinkedIn...)" />
-                  </div>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <input value={s.url} onChange={(e) => updateSocial(i, 'url', e.target.value)} placeholder="URL" />
-                  </div>
-                  <button className="btn-icon" onClick={() => removeSocial(i)} style={{ flexShrink: 0, marginTop: 0 }}><i className="fa-regular fa-xmark"></i></button>
-                </div>
-              ))}
-              <button className="btn btn-outline btn-sm" onClick={addSocial}><i className="fa-regular fa-plus"></i> Add Social Link</button>
-
-              <div className="form-section-title" style={{ marginTop: 16 }}>Buttons</div>
-              {form.buttons.map((b, i) => (
-                <div key={i} className="form-row" style={{ alignItems: 'center' }}>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <input value={b.label} onChange={(e) => updateButton(i, 'label', e.target.value)} placeholder="Label" />
-                  </div>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <input value={b.url} onChange={(e) => updateButton(i, 'url', e.target.value)} placeholder="URL (#contact, #projects...)" />
-                  </div>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <select value={b.type} onChange={(e) => updateButton(i, 'type', e.target.value)}>
-                      <option value="primary">Primary</option>
-                      <option value="secondary">Secondary</option>
-                    </select>
-                  </div>
-                  <button className="btn-icon" onClick={() => removeButton(i)} style={{ flexShrink: 0, marginTop: 0 }}><i className="fa-regular fa-xmark"></i></button>
-                </div>
-              ))}
-              <button className="btn btn-outline btn-sm" onClick={addButton}><i className="fa-regular fa-plus"></i> Add Button</button>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : editing ? 'Update' : 'Create'}</button>
+            <div>
+              <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+              <button className="btn btn-ghost btn-sm" onClick={() => avatarInputRef.current?.click()}>Upload Avatar</button>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', margin: '0.25rem 0 0' }}>Recommended: 500x500px</p>
             </div>
           </div>
         </div>
-      )}
-    </div>
+
+        <div style={{ padding: '1.5rem', borderRadius: 14, border: '1px solid var(--color-border)', background: 'var(--color-card)' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: '0 0 1rem' }}>Hero Content</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="form-group">
+              <label>Name <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Doe" />
+            </div>
+            <div className="form-group">
+              <label>Professional Title</label>
+              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Full Stack Developer" />
+            </div>
+            <div className="form-group">
+              <label>Short Bio</label>
+              <textarea rows={3} value={form.shortBio} onChange={(e) => setForm({ ...form, shortBio: e.target.value })} placeholder="A brief introduction..." />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: '1.5rem', borderRadius: 14, border: '1px solid var(--color-border)', background: 'var(--color-card)' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: '0 0 1rem' }}>Background Image</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div
+              style={{ width: 200, height: 120, borderRadius: 10, overflow: 'hidden', border: '2px solid var(--color-border)', background: 'var(--color-bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+              onClick={() => bgInputRef.current?.click()}
+            >
+              {form.backgroundImage ? (
+                <img src={form.backgroundFile ? form.backgroundImage : imageUrl(form.backgroundImage)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <Icon path={Icons.image} size={36} style={{ color: 'var(--color-text-tertiary)' }} />
+              )}
+            </div>
+            <div>
+              <input ref={bgInputRef} type="file" accept="image/*" onChange={handleBgChange} style={{ display: 'none' }} />
+              <button className="btn btn-ghost btn-sm" onClick={() => bgInputRef.current?.click()}>Upload Background</button>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-tertiary)', margin: '0.25rem 0 0' }}>Recommended: 1920x1080px</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: '1.5rem', borderRadius: 14, border: '1px solid var(--color-border)', background: 'var(--color-card)' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: '0 0 1rem' }}>Social Links</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {form.socialLinks.map((s, i) => (
+              <div key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                  <input value={s.platform} onChange={(e) => updateSocial(i, 'platform', e.target.value)} placeholder="Platform (GitHub, LinkedIn...)" />
+                </div>
+                <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                  <input value={s.url} onChange={(e) => updateSocial(i, 'url', e.target.value)} placeholder="URL" />
+                </div>
+                <button onClick={() => removeSocial(i)} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, cursor: 'pointer', color: 'var(--color-danger)', background: 'transparent', flexShrink: 0 }}>
+                  <Icon path={Icons.trash2} size={14} />
+                </button>
+              </div>
+            ))}
+            <button className="btn btn-ghost btn-sm" onClick={addSocial} style={{ alignSelf: 'flex-start' }}>
+              <Icon path={Icons.plus} size={14} /> Add Social Link
+            </button>
+          </div>
+        </div>
+
+        <div style={{ padding: '1.5rem', borderRadius: 14, border: '1px solid var(--color-border)', background: 'var(--color-card)' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text)', margin: '0 0 1rem' }}>CTA Buttons</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {form.ctaButtons.map((b, i) => (
+              <div key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                  <input value={b.label} onChange={(e) => updateCta(i, 'label', e.target.value)} placeholder="Button Label" />
+                </div>
+                <div className="form-group" style={{ flex: 1, margin: 0 }}>
+                  <input value={b.url} onChange={(e) => updateCta(i, 'url', e.target.value)} placeholder="URL (#contact, #projects...)" />
+                </div>
+                <button onClick={() => removeCta(i)} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 6, cursor: 'pointer', color: 'var(--color-danger)', background: 'transparent', flexShrink: 0 }}>
+                  <Icon path={Icons.trash2} size={14} />
+                </button>
+              </div>
+            ))}
+            <button className="btn btn-ghost btn-sm" onClick={addCta} style={{ alignSelf: 'flex-start' }}>
+              <Icon path={Icons.plus} size={14} /> Add CTA Button
+            </button>
+          </div>
+        </div>
+      </div>
+    </PageLayout>
   );
 }
-
-export default HeroManagement;

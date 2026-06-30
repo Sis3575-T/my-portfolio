@@ -13,6 +13,9 @@ const experienceSchema = new mongoose.Schema({
   location: { type: String, default: '' },
   order: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
+  status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+  publishedAt: { type: Date, default: null },
+  scheduledAt: { type: Date, default: null },
 }, { timestamps: true });
 
 experienceSchema.index({ order: 1 });

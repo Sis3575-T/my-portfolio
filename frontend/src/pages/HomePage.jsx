@@ -1,91 +1,113 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { PageSection } from '../utils/componentMapper';
-import { publicApi } from '../utils/api';
-
-import HeroSection from '../components/home/HeroSection';
-import AboutSection from '../components/home/AboutSection';
-import StatsSection from '../components/home/StatsSection';
-import SkillsSection from '../components/home/SkillsSection';
-import ProjectsSection from '../components/home/ProjectsSection';
-import ExperienceSection from '../components/home/ExperienceSection';
-import EducationSection from '../components/home/EducationSection';
-import CertificatesSection from '../components/home/CertificatesSection';
-import ServicesSection from '../components/home/ServicesSection';
-import ContactSection from '../components/home/ContactSection';
-
-const fallbackSections = [
-  { _id: 'hero', type: 'hero' },
-  { _id: 'about', type: 'about' },
-  { _id: 'stats', type: 'stats' },
-  { _id: 'skills', type: 'skills' },
-  { _id: 'projects', type: 'projects' },
-  { _id: 'experience', type: 'experience' },
-  { _id: 'education', type: 'education' },
-  { _id: 'certificates', type: 'certificates' },
-  { _id: 'services', type: 'services' },
-  { _id: 'contact', type: 'contact' },
-];
-
-const keyToComponent = {
-  hero: HeroSection,
-  about: AboutSection,
-  stats: StatsSection,
-  skills: SkillsSection,
-  projects: ProjectsSection,
-  experience: ExperienceSection,
-  education: EducationSection,
-  certificates: CertificatesSection,
-  services: ServicesSection,
-  contact: ContactSection,
-};
-
-function FallbackSection({ component }) {
-  const Comp = keyToComponent[component.type];
-  return Comp ? <Comp /> : null;
-}
+import React, { useState, useEffect, useCallback } from 'react';
+import { websiteApi } from '../api';
+import LoadingSkeleton from '../components/LoadingSkeleton';
+import ErrorState from '../components/ErrorState';
+import Navbar from '../components/Navbar';
+import Hero from '../components/Hero';
+import About from '../components/About';
+import Skills from '../components/Skills';
+import Experience from '../components/Experience';
+import Education from '../components/Education';
+import Projects from '../components/Projects';
+import Testimonials from '../components/Testimonials';
+import Services from '../components/Services';
+import Blog from '../components/Blog';
+import Contact from '../components/Contact';
+import Footer from '../components/Footer';
 
 function HomePage() {
-  const [components, setComponents] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({
+    loading: true,
+    error: null,
+    hero: null,
+    settings: null,
+    projects: [],
+    skills: [],
+    experience: [],
+    education: [],
+    testimonials: [],
+    services: [],
+    blog: [],
+  });
 
-  useEffect(() => {
-    publicApi.getHomePage()
-      .then(({ data }) => {
-        const page = data?.data;
-        if (page?.components?.length > 0) {
-          setComponents(page.components);
-        }
+  const fetchData = useCallback(() => {
+    setData(prev => ({ ...prev, loading: true, error: null }));
+    Promise.all([
+      websiteApi.getHero(),
+      websiteApi.getSettings(),
+      websiteApi.getProjects(),
+      websiteApi.getSkills(),
+      websiteApi.getExperience(),
+      websiteApi.getEducation(),
+      websiteApi.getTestimonials(),
+      websiteApi.getServices(),
+      websiteApi.getBlog(),
+    ])
+      .then(([heroRes, settingsRes, projectsRes, skillsRes, expRes, eduRes, testRes, servRes, blogRes]) => {
+        setData({
+          loading: false,
+          error: null,
+          hero: heroRes.data.data,
+          settings: settingsRes.data.data,
+          projects: projectsRes.data.data || [],
+          skills: skillsRes.data.data || [],
+          experience: expRes.data.data || [],
+          education: eduRes.data.data || [],
+          testimonials: testRes.data.data || [],
+          services: servRes.data.data || [],
+          blog: blogRes.data.data || [],
+        });
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(err => {
+        setData(prev => ({ ...prev, loading: false, error: err.message }));
+      });
   }, []);
 
-  if (loading) {
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  if (data.loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-        <div className="spinner" />
+      <div className="page">
+        <div className="navbar-placeholder" />
+        <div className="container" style={{ padding: '4rem 0' }}>
+          <LoadingSkeleton variant="card" count={6} />
+        </div>
       </div>
     );
   }
 
-  const visible = components?.filter((c) => c.isVisible !== false) ?? fallbackSections;
-  const useFallback = !components;
+  if (data.error) {
+    return (
+      <div className="page">
+        <div className="navbar-placeholder" />
+        <div className="container" style={{ padding: '4rem 0' }}>
+          <ErrorState message={data.error} onRetry={fetchData} />
+        </div>
+      </div>
+    );
+  }
+
+  const { hero, settings, projects, skills, experience, education, testimonials, services, blog } = data;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-    >
-      {visible.map((comp) => {
-        if (useFallback) {
-          return <FallbackSection key={comp._id} component={comp} />;
-        }
-        return <PageSection key={comp._id} component={comp} />;
-      })}
-    </motion.div>
+    <div className="page">
+      <Navbar />
+      <main>
+        <Hero hero={hero} settings={settings} />
+        <About settings={settings} />
+        <Skills skills={skills} />
+        <Experience experience={experience} />
+        <Education education={education} />
+        <Projects projects={projects} />
+        <Testimonials testimonials={testimonials} />
+        <Services services={services} />
+        <Blog posts={blog} />
+        <Contact settings={settings} />
+      </main>
+      <Footer />
+    </div>
   );
 }
 
