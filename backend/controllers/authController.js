@@ -94,6 +94,27 @@ exports.updateProfile = async (req, res) => {
     const completion = calculateProfileCompletion(user);
     await User.findByIdAndUpdate(req.user._id, { profileCompletion: completion });
 
+    // Sync profile changes to Hero + Settings models so frontend reflects updates
+    try {
+      const Hero = require('../models/Hero');
+      const Settings = require('../models/Settings');
+      if (updates.avatar !== undefined) {
+        await Hero.findOneAndUpdate({}, { $set: { avatar: updates.avatar } });
+        await Settings.findOneAndUpdate({}, { $set: { profilePhoto: updates.avatar } });
+      }
+      if (updates.name) {
+        await Hero.findOneAndUpdate({}, { $set: { name: updates.name } });
+      }
+      if (updates.bio) {
+        await Hero.findOneAndUpdate({}, { $set: { introduction: updates.bio } });
+      }
+      if (updates.jobTitle) {
+        await Hero.findOneAndUpdate({}, { $set: { role: updates.jobTitle } });
+      }
+    } catch (err) {
+      console.error('Profile sync error:', err.message);
+    }
+
     await ActivityLog.create({ user: req.user._id, action: 'profile.updated' });
     res.json({ success: true, user: { ...user.toJSON(), profileCompletion: completion } });
   } catch (error) {

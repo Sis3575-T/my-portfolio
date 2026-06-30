@@ -6,14 +6,15 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
 }
 
-function Experience({ experience }) {
+function Experience({ experience, sectionTitle, sectionSubtitle }) {
   if (!experience || experience.length === 0) return null;
 
   return (
     <section className="experience section" id="experience">
       <div className="container">
         <div className="section-header">
-          <h2 className="section-title">Experience</h2>
+          <h2 className="section-title">{sectionTitle || 'Experience'}</h2>
+          {sectionSubtitle && <p className="section-subtitle">{sectionSubtitle}</p>}
           <div className="section-divider" />
         </div>
         <div className="timeline">

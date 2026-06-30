@@ -5,6 +5,7 @@ const Page = require('../models/Page');
 const Section = require('../models/Section');
 const Settings = require('../models/Settings');
 const Hero = require('../models/Hero');
+const About = require('../models/About');
 const Project = require('../models/Project');
 const Skill = require('../models/Skill');
 const Experience = require('../models/Experience');
@@ -54,6 +55,16 @@ router.get('/settings', async (req, res) => {
     const settings = await Settings.findOne().select('-__v');
     if (!settings) return res.json({ success: true, data: null });
     res.json({ success: true, data: settings });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// About
+router.get('/about', async (req, res) => {
+  try {
+    const about = await About.findOne({ status: 'published' });
+    res.json({ success: true, data: about });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -154,6 +165,18 @@ router.get('/timeline', async (req, res) => {
   try {
     const items = await Timeline.find({ status: 'published' }).sort({ order: 1 });
     res.json({ success: true, data: items });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Site config (sections + settings in one call)
+router.get('/site-config', async (req, res) => {
+  try {
+    const sections = await Section.find({ status: 'published', visible: true }).sort('order').lean();
+    const settings = await Settings.findOne().select('-__v').lean();
+    const navItems = await Page.find({ status: 'published' }).select('name slug').sort('order').lean();
+    res.json({ success: true, data: { sections, settings, navItems } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

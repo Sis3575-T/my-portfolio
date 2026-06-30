@@ -205,6 +205,17 @@ export default function ComponentBuilder() {
     }
   };
 
+  const handleToggleVisible = async (comp) => {
+    const next = comp.visible === false ? true : false;
+    try {
+      await api.put(`/sections/${comp._id}`, { visible: next });
+      setComponents(prev => prev.map(c => c._id === comp._id ? { ...c, visible: next } : c));
+      toast.success(`Component ${next ? 'shown' : 'hidden'}`);
+    } catch {
+      toast.error('Failed to toggle visibility');
+    }
+  };
+
   const handleToggleStatus = async (comp) => {
     try {
       const newStatus = comp.status === 'published' || (comp.visible !== false && !comp.status) ? 'draft' : 'published';
@@ -552,8 +563,10 @@ export default function ComponentBuilder() {
             />
           </th>
           {[
+            { key: 'order', label: '#' },
             { key: 'name', label: 'Name' },
             { key: 'type', label: 'Type' },
+            { key: 'visible', label: 'Visible' },
             { key: 'status', label: 'Status' },
             { key: 'version', label: 'Version' },
             { key: 'usageCount', label: 'Used On' },
@@ -583,6 +596,7 @@ export default function ComponentBuilder() {
                 style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }}
               />
             </td>
+            <td style={{ color: 'var(--color-text-tertiary)', fontSize: '0.82rem', textAlign: 'center' }}>{comp.order ?? '-'}</td>
             <td>
               <div className="comp-list-name" onClick={() => handleEdit(comp)}>
                 <span className="comp-list-type-dot" style={{ background: typeColors[comp.type] || '#78716c' }} />
@@ -590,6 +604,19 @@ export default function ComponentBuilder() {
               </div>
             </td>
             <td><span className="comp-card-type-badge" style={{ background: `${(typeColors[comp.type] || '#78716c')}18`, color: typeColors[comp.type] || '#78716c' }}>{typeLabels[comp.type] || comp.type}</span></td>
+            <td>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleToggleVisible(comp); }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 4,
+                  color: comp.visible !== false ? '#16a34a' : '#dc2626',
+                  fontSize: '1rem',
+                }}
+                title={comp.visible !== false ? 'Visible' : 'Hidden'}
+              >
+                <Icon path={comp.visible !== false ? Icons.eye : Icons['eye-off']} size={16} />
+              </button>
+            </td>
             <td>
               {(() => {
                 const status = comp.status || (comp.visible !== false ? 'published' : 'draft');

@@ -1,7 +1,7 @@
 import React from 'react';
 import { getImageUrl } from '../api';
 
-function Testimonials({ testimonials }) {
+function Testimonials({ testimonials, sectionTitle, sectionSubtitle }) {
   if (!testimonials || testimonials.length === 0) return null;
 
   const featured = testimonials.filter(t => t.featured);
@@ -11,7 +11,8 @@ function Testimonials({ testimonials }) {
     <section className="testimonials section" id="testimonials">
       <div className="container">
         <div className="section-header">
-          <h2 className="section-title">Testimonials</h2>
+          <h2 className="section-title">{sectionTitle || 'Testimonials'}</h2>
+          {sectionSubtitle && <p className="section-subtitle">{sectionSubtitle}</p>}
           <div className="section-divider" />
         </div>
         <div className="testimonials-grid">

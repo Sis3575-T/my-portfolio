@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { websiteApi, getImageUrl } from '../api';
 
-function Footer() {
-  const [settings, setSettings] = useState(null);
-  const [pages, setPages] = useState([]);
+function Footer({ settings: propSettings, navItems: propNavItems }) {
+  const [settings, setSettings] = useState(propSettings || null);
+  const [pages, setPages] = useState(propNavItems || []);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
-    websiteApi.getSettings().then(res => setSettings(res.data.data)).catch(() => {});
-    websiteApi.getPages().then(res => setPages(res.data.data || [])).catch(() => {});
-  }, []);
+    if (!propSettings) websiteApi.getSettings().then((res) => setSettings(res.data.data)).catch(() => {});
+    if (!propNavItems) websiteApi.getPages().then((res) => setPages(res.data.data || [])).catch(() => {});
+  }, [propSettings, propNavItems]);
 
   useEffect(() => {
     const onScroll = () => setShowBackToTop(window.scrollY > 400);
@@ -27,14 +27,13 @@ function Footer() {
     { platform: 'Telegram', url: settings.telegram },
     { platform: 'Instagram', url: settings.instagram },
     { platform: 'YouTube', url: settings.youtube },
-  ].filter(s => s.url) : [];
+  ].filter((s) => s.url) : [];
 
-  const navItems = pages.length > 0 ? pages : [
-    { name: 'Home', slug: '' },
+  const navItems = [{ name: 'Home', slug: '' }, ...(pages.length > 0 ? pages : [
     { name: 'Blog', slug: 'blog' },
     { name: 'Gallery', slug: 'gallery' },
     { name: 'Contact', slug: 'contact' },
-  ];
+  ])];
 
   const year = new Date().getFullYear();
 
@@ -57,7 +56,9 @@ function Footer() {
                   <p className="footer-site-tagline">{settings?.siteDescription || ''}</p>
                 </div>
               </div>
-              <p className="footer-bio">{settings?.shortBio || settings?.longBio?.substring(0, 150) || ''}</p>
+              <p className="footer-bio">
+                {settings?.shortBio || settings?.longBio?.substring(0, 150) || 'Building thoughtful web experiences with modern tools, reliability, and a strong user focus.'}
+              </p>
               {socialLinks.length > 0 && (
                 <div className="footer-social">
                   {socialLinks.map((s, i) => (
@@ -102,13 +103,13 @@ function Footer() {
               </div>
             </div>
             <div className="footer-col">
-              <h4 className="footer-col-title">Newsletter</h4>
-              <p className="footer-newsletter-text">Stay updated with my latest projects and posts.</p>
+              <h4 className="footer-col-title">Stay Connected</h4>
+              <p className="footer-newsletter-text">Follow along for product updates, project highlights, and technical notes.</p>
             </div>
           </div>
           <div className="footer-bottom">
             <p className="footer-copyright">{settings?.copyrightText || `© ${year} All rights reserved.`}</p>
-            <p className="footer-text">{settings?.footerText || 'Built with React & Node.js'}</p>
+            <p className="footer-text">{settings?.footerText || 'Built with React, Node.js, and care for the user experience.'}</p>
           </div>
         </div>
       </footer>

@@ -6,14 +6,15 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
 }
 
-function Education({ education }) {
+function Education({ education, sectionTitle, sectionSubtitle }) {
   if (!education || education.length === 0) return null;
 
   return (
     <section className="education section" id="education">
       <div className="container">
         <div className="section-header">
-          <h2 className="section-title">Education</h2>
+          <h2 className="section-title">{sectionTitle || 'Education'}</h2>
+          {sectionSubtitle && <p className="section-subtitle">{sectionSubtitle}</p>}
           <div className="section-divider" />
         </div>
         <div className="education-grid">

@@ -4,12 +4,16 @@ import { getImageUrl } from '../api';
 function Hero({ hero, settings }) {
   if (!hero) return null;
 
-  const name = hero.name || '';
-  const title = hero.title || '';
-  const introduction = hero.introduction || '';
+  const name = hero.name || settings?.name || 'Sisay Temesgen';
+  const title = hero.title || settings?.professionalTitle || 'Full Stack Developer';
   const avatar = hero.avatar;
   const buttons = hero.buttons || [];
   const socialLinks = hero.socialLinks || [];
+  const availability = hero.availability || {};
+  const role = hero.role || 'Full Stack Developer';
+  const greeting = hero.greeting || 'Hello, I\'m';
+  const headline = hero.headline || 'I build polished digital products that blend thoughtful design with reliable engineering.';
+  const description = hero.description || settings?.shortBio || 'I specialize in creating responsive, accessible web experiences with React, Node.js, and modern full-stack architecture.';
 
   const settingsSocial = settings ? {
     github: settings.github,
@@ -32,6 +36,12 @@ function Hero({ hero, settings }) {
     index === self.findIndex(s => s.platform === item.platform)
   );
 
+  const highlights = [
+    { value: '2+', label: 'Years building' },
+    { value: '15+', label: 'Projects shipped' },
+    { value: '100%', label: 'Remote-ready' },
+  ];
+
   return (
     <section className="hero section" id="home">
       <div className="hero-bg-shapes">
@@ -44,25 +54,29 @@ function Hero({ hero, settings }) {
           <div className="hero-text-col">
             <div className="hero-badge">
               <span className="hero-badge-dot" />
-              {hero.availability?.text || 'Available for work'}
+              {availability?.text || 'Available for freelance and collaboration'}
             </div>
             <h1 className="hero-title">
-              {introduction && <span className="hero-greeting">{introduction}</span>}
+              <span className="hero-greeting">{greeting}</span>
               <span className="hero-name">{name}</span>
             </h1>
-            <p className="hero-subtitle">{title}</p>
+            <p className="hero-subtitle">{role}</p>
+            <p className="hero-headline">{headline}</p>
+            <p className="hero-description">{description}</p>
+            <div className="hero-highlights">
+              {highlights.map((item) => (
+                <div key={item.label} className="hero-highlight-card">
+                  <strong>{item.value}</strong>
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
             {buttons.length > 0 && (
               <div className="hero-buttons">
                 {buttons.map((btn, i) => (
-                    btn.type === 'primary' ? (
-                      <a key={i} href={btn.url || btn.file} className="btn btn-primary" target={btn.url ? '_blank' : undefined} rel="noopener noreferrer" data-track="hero-cta" data-track-value={btn.label}>
-                        {btn.label}
-                      </a>
-                    ) : (
-                      <a key={i} href={btn.url || btn.file} className="btn btn-outline" target={btn.url ? '_blank' : undefined} rel="noopener noreferrer" data-track="hero-cta" data-track-value={btn.label}>
-                        {btn.label}
-                      </a>
-                    )
+                  <a key={i} href={btn.url || btn.file || '#projects'} className={`btn ${btn.type === 'primary' ? 'btn-primary' : 'btn-outline'}`} target={btn.url ? '_blank' : undefined} rel="noopener noreferrer" data-track="hero-cta" data-track-value={btn.label}>
+                    {btn.label}
+                  </a>
                 ))}
               </div>
             )}

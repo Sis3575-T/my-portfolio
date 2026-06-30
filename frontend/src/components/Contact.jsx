@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { websiteApi } from '../api';
 import Toast from './Toast';
 
-function Contact({ settings }) {
+function Contact({ settings, sectionTitle, sectionSubtitle }) {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -44,13 +44,16 @@ function Contact({ settings }) {
     <section className="contact section" id="contact">
       <div className="container">
         <div className="section-header">
-          <h2 className="section-title">Get In Touch</h2>
+          <h2 className="section-title">{sectionTitle || 'Get In Touch'}</h2>
+          {sectionSubtitle && <p className="section-subtitle">{sectionSubtitle}</p>}
           <div className="section-divider" />
         </div>
         <div className="contact-content">
           <div className="contact-info">
-            <h3 className="contact-info-title">Let's talk about everything!</h3>
-            <p className="contact-info-text">Have a project in mind or just want to say hi? Fill out the form and I'll get back to you.</p>
+            <h3 className="contact-info-title">Let’s build something meaningful together.</h3>
+            <p className="contact-info-text">
+              I’m open to collaboration, freelance work, and thoughtful product challenges. If you need a reliable developer who values clarity, speed, and clean execution, I’d love to hear from you.
+            </p>
             <div className="contact-details">
               {settings?.email && (
                 <div className="contact-detail">
@@ -97,7 +100,7 @@ function Contact({ settings }) {
                   name="name"
                   value={form.name}
                   onChange={handleChange}
-                  placeholder="John Doe"
+                  placeholder="Your name"
                   className={errors.name ? 'error' : ''}
                 />
                 {errors.name && <span className="form-error">{errors.name}</span>}
@@ -110,7 +113,7 @@ function Contact({ settings }) {
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  placeholder="john@example.com"
+                  placeholder="you@example.com"
                   className={errors.email ? 'error' : ''}
                 />
                 {errors.email && <span className="form-error">{errors.email}</span>}
@@ -124,7 +127,7 @@ function Contact({ settings }) {
                 name="subject"
                 value={form.subject}
                 onChange={handleChange}
-                placeholder="Project Collaboration"
+                placeholder="Project collaboration"
               />
             </div>
             <div className="form-group">
@@ -135,7 +138,7 @@ function Contact({ settings }) {
                 rows="5"
                 value={form.message}
                 onChange={handleChange}
-                placeholder="Tell me about your project..."
+                placeholder="Tell me about the idea, product, or challenge you are working on..."
                 className={errors.message ? 'error' : ''}
               />
               {errors.message && <span className="form-error">{errors.message}</span>}

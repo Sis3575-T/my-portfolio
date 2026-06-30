@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { getImageUrl } from '../api';
 
-function Blog({ posts }) {
+function Blog({ posts, sectionTitle, sectionSubtitle }) {
   if (!posts || posts.length === 0) return null;
 
   const latest = posts.slice(0, 3);
@@ -11,7 +11,8 @@ function Blog({ posts }) {
     <section className="blog section" id="blog">
       <div className="container">
         <div className="section-header">
-          <h2 className="section-title">Latest Posts</h2>
+          <h2 className="section-title">{sectionTitle || 'Latest Posts'}</h2>
+          {sectionSubtitle && <p className="section-subtitle">{sectionSubtitle}</p>}
           <div className="section-divider" />
         </div>
         <div className="blog-grid">

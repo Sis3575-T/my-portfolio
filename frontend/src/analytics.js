@@ -1,4 +1,4 @@
-const ANALYTICS_API = import.meta.env.VITE_API_URL?.replace('/api/website', '') || 'http://localhost:5000';
+const ANALYTICS_API = import.meta.env.VITE_API_URL?.replace('/api/website', '') || 'https://my-portfolio-4-kvzu.onrender.com';
 
 function getVisitorId() {
   let id = localStorage.getItem('_vid');

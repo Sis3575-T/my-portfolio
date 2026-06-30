@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { websiteApi, getImageUrl } from '../api';
 
-function Navbar() {
+function Navbar({ settings: propSettings, navItems: propNavItems }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [settings, setSettings] = useState(null);
-  const [pages, setPages] = useState([]);
+  const [settings, setSettings] = useState(propSettings || null);
+  const [pages, setPages] = useState(propNavItems || []);
   const [darkMode, setDarkMode] = useState(() => {
     const stored = localStorage.getItem('theme');
     if (stored) return stored === 'dark';
@@ -20,9 +20,9 @@ function Navbar() {
   }, [darkMode]);
 
   useEffect(() => {
-    websiteApi.getSettings().then(res => setSettings(res.data.data)).catch(() => {});
-    websiteApi.getPages().then(res => setPages(res.data.data || [])).catch(() => {});
-  }, []);
+    if (!propSettings) websiteApi.getSettings().then(res => setSettings(res.data.data)).catch(() => {});
+    if (!propNavItems) websiteApi.getPages().then(res => setPages(res.data.data || [])).catch(() => {});
+  }, [propSettings, propNavItems]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50);
@@ -36,12 +36,11 @@ function Navbar() {
 
   const logo = settings?.logo;
   const siteTitle = settings?.siteTitle || 'Portfolio';
-  const navItems = pages.length > 0 ? pages : [
-    { name: 'Home', slug: '' },
+  const navItems = [{ name: 'Home', slug: '' }, ...(pages.length > 0 ? pages : [
     { name: 'Blog', slug: 'blog' },
     { name: 'Gallery', slug: 'gallery' },
     { name: 'Contact', slug: 'contact' },
-  ];
+  ])];
 
   return (
     <nav className={`navbar${scrolled ? ' navbar-scrolled' : ''}`}>

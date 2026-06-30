@@ -1,14 +1,18 @@
 import axios from 'axios';
 
+const defaultApiUrl = 'https://my-portfolio-4-kvzu.onrender.com/api/website';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/website',
+  baseURL: import.meta.env.VITE_API_URL || defaultApiUrl,
 });
 
 export const websiteApi = {
+  getSiteConfig: () => api.get('/site-config'),
   getPages: () => api.get('/pages'),
   getPageBySlug: (slug) => api.get(`/pages/${slug}`),
   getSections: () => api.get('/sections'),
   getSettings: () => api.get('/settings'),
+  getAbout: () => api.get('/about'),
   getHero: () => api.get('/hero'),
   getProjects: () => api.get('/projects'),
   getSkills: () => api.get('/skills'),
@@ -25,7 +29,7 @@ export const websiteApi = {
 export const getImageUrl = (path) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  const base = import.meta.env.VITE_API_URL?.replace('/api/website', '') || 'http://localhost:5000';
+  const base = import.meta.env.VITE_API_URL?.replace('/api/website', '') || 'https://my-portfolio-4-kvzu.onrender.com';
   return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
 };
 

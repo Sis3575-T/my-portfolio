@@ -561,6 +561,8 @@ export default function ComponentEditor({ open, component, onClose, onSave, onPr
     <div className="editor-tab-content">
       <h4 className="editor-tab-title">Visibility</h4>
       {renderField('Status', getVal('status'), v => updateForm('status', v), 'select', { options: ['published', 'draft', 'hidden', 'archived'] })}
+      {renderField('Visible (main toggle)', getVal('visible', true), v => updateForm('visible', v), 'toggle')}
+      {renderField('Order', getVal('order', 0), v => updateForm('order', Math.max(0, Number(v))), 'number', { placeholder: '0' })}
       {renderField('Show on Desktop', getVal('visibility.desktop'), v => updateForm('visibility.desktop', v), 'toggle')}
       {renderField('Show on Tablet', getVal('visibility.tablet'), v => updateForm('visibility.tablet', v), 'toggle')}
       {renderField('Show on Mobile', getVal('visibility.mobile'), v => updateForm('visibility.mobile', v), 'toggle')}

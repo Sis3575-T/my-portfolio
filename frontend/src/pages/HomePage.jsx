@@ -15,12 +15,27 @@ import Blog from '../components/Blog';
 import Contact from '../components/Contact';
 import Footer from '../components/Footer';
 
+const SECTION_MAP = {
+  hero: [Hero, 'hero'],
+  about: [About, null],
+  skills: [Skills, 'skills'],
+  experience: [Experience, 'experience'],
+  education: [Education, 'education'],
+  projects: [Projects, 'projects'],
+  testimonials: [Testimonials, 'testimonials'],
+  services: [Services, 'services'],
+  blog: [Blog, 'posts'],
+  contact: [Contact, null],
+  certificates: [null, null],
+};
+
 function HomePage() {
   const [data, setData] = useState({
     loading: true,
     error: null,
-    hero: null,
+    sections: null,
     settings: null,
+    hero: null,
     projects: [],
     skills: [],
     experience: [],
@@ -33,8 +48,8 @@ function HomePage() {
   const fetchData = useCallback(() => {
     setData(prev => ({ ...prev, loading: true, error: null }));
     Promise.all([
+      websiteApi.getSiteConfig(),
       websiteApi.getHero(),
-      websiteApi.getSettings(),
       websiteApi.getProjects(),
       websiteApi.getSkills(),
       websiteApi.getExperience(),
@@ -43,12 +58,15 @@ function HomePage() {
       websiteApi.getServices(),
       websiteApi.getBlog(),
     ])
-      .then(([heroRes, settingsRes, projectsRes, skillsRes, expRes, eduRes, testRes, servRes, blogRes]) => {
+      .then(([configRes, heroRes, projectsRes, skillsRes, expRes, eduRes, testRes, servRes, blogRes]) => {
+        const config = configRes.data.data;
         setData({
           loading: false,
           error: null,
+          sections: config?.sections || null,
+          settings: config?.settings || null,
+          navItems: config?.navItems || [],
           hero: heroRes.data.data,
-          settings: settingsRes.data.data,
           projects: projectsRes.data.data || [],
           skills: skillsRes.data.data || [],
           experience: expRes.data.data || [],
@@ -89,24 +107,52 @@ function HomePage() {
     );
   }
 
-  const { hero, settings, projects, skills, experience, education, testimonials, services, blog } = data;
+  const { sections, settings, hero, projects, skills, experience, education, testimonials, services, blog, navItems } = data;
+
+  const dataMap = { hero, projects, skills, experience, education, testimonials, services, blog };
+
+  const sectionsToRender = sections && sections.length > 0
+    ? sections.filter(s => s.visible !== false && s.status === 'published')
+    : null;
 
   return (
     <div className="page">
-      <Navbar />
+      <Navbar navItems={navItems} settings={settings} />
       <main>
-        <Hero hero={hero} settings={settings} />
-        <About settings={settings} />
-        <Skills skills={skills} />
-        <Experience experience={experience} />
-        <Education education={education} />
-        <Projects projects={projects} />
-        <Testimonials testimonials={testimonials} />
-        <Services services={services} />
-        <Blog posts={blog} />
-        <Contact settings={settings} />
+        {sectionsToRender ? (
+          sectionsToRender.map(section => {
+            const mapping = SECTION_MAP[section.type];
+            if (!mapping) return null;
+            const [Comp, dataKey] = mapping;
+            if (!Comp) return null;
+            const content = section.content || {};
+            const extraProps = dataKey ? { [dataKey]: dataMap[dataKey] } : {};
+            return (
+              <Comp
+                key={section.type}
+                {...extraProps}
+                settings={settings}
+                sectionTitle={content.title}
+                sectionSubtitle={content.subtitle}
+              />
+            );
+          })
+        ) : (
+          <>
+            <Hero hero={hero} settings={settings} />
+            <About settings={settings} />
+            <Skills skills={skills} />
+            <Experience experience={experience} />
+            <Education education={education} />
+            <Projects projects={projects} />
+            <Testimonials testimonials={testimonials} />
+            <Services services={services} />
+            <Blog posts={blog} />
+            <Contact settings={settings} />
+          </>
+        )}
       </main>
-      <Footer />
+      <Footer settings={settings} navItems={navItems} />
     </div>
   );
 }

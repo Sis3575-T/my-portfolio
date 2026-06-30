@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { getImageUrl } from '../api';
 
-function Projects({ projects }) {
+function Projects({ projects, sectionTitle, sectionSubtitle }) {
   const [filter, setFilter] = useState('All');
 
   const categories = useMemo(() => {
@@ -22,7 +22,8 @@ function Projects({ projects }) {
     <section className="projects section" id="projects">
       <div className="container">
         <div className="section-header">
-          <h2 className="section-title">Projects</h2>
+          <h2 className="section-title">{sectionTitle || 'Projects'}</h2>
+          {sectionSubtitle && <p className="section-subtitle">{sectionSubtitle}</p>}
           <div className="section-divider" />
         </div>
         {categories.length > 1 && (

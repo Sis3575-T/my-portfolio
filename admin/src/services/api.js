@@ -40,6 +40,17 @@ export const adminApi = {
   updateProfile: (data) => api.put('/auth/profile', data),
   changePassword: (currentPassword, newPassword) =>
     api.put('/auth/change-password', { currentPassword, newPassword }),
+  updatePreferences: (data) => api.put('/auth/preferences', data),
+  updateNotifications: (data) => api.put('/auth/notifications', data),
+  getSessions: () => api.get('/auth/sessions'),
+  terminateSession: (id) => api.delete(`/auth/sessions/${id}`),
+  terminateOtherSessions: () => api.post('/auth/sessions/terminate-other'),
+  logoutAllSessions: () => api.post('/auth/sessions/logout-all'),
+  connectAccount: (provider, data) => api.post(`/auth/connect/${provider}`, data),
+  disconnectAccount: (provider) => api.delete(`/auth/connect/${provider}`),
+  deleteAccount: () => api.delete('/auth/account'),
+  deactivateAccount: () => api.post('/auth/deactivate'),
+  updateTwoFactor: (enabled) => api.put('/auth/two-factor', { enabled }),
 
   // Dashboard & Analytics
   getDashboardStats: (params) => api.get('/analytics/dashboard', { params }),

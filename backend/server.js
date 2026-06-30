@@ -72,7 +72,11 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 
-connectDB().then(() => seedAdmin());
+connectDB().then(async () => {
+  await seedAdmin();
+  try { await require('./seed/seedSections')(); } catch (e) { console.error('Seed sections error:', e.message); }
+  try { await require('./seed/seedContent')(); } catch (e) { console.error('Seed content error:', e.message); }
+});
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({
@@ -207,6 +211,10 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
